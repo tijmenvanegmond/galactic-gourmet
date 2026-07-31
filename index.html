@@ -72,6 +72,23 @@ h1 em { font-style: normal; color: var(--ember); }
 .ticket-line { font-size: 15px; font-weight: 600; }
 .ticket-line span { text-transform: lowercase; }
 
+/* the diner speaks */
+.diner {
+  display: flex; align-items: baseline; gap: 10px;
+  padding: 7px 10px; margin-bottom: 8px;
+  background: var(--panel); border: 1px solid var(--rule);
+  border-left: 3px solid var(--char);
+  font-family: var(--mono); font-size: 11px;
+  min-height: 32px;
+}
+.diner-name {
+  color: var(--char); font-size: 10px; letter-spacing: 0.14em;
+  text-transform: uppercase; white-space: nowrap; flex: none;
+  transition: color 200ms;
+}
+.diner-name.hunting { color: var(--ember); animation: throb 500ms ease-in-out infinite; }
+.diner-say { color: var(--ink-dim); font-style: italic; }
+
 canvas {
   width: 100%; display: block; background: var(--panel);
   border: 1px solid var(--rule); touch-action: none; cursor: crosshair;
@@ -163,14 +180,21 @@ button:focus-visible { outline: 2px solid var(--mint); outline-offset: 2px; }
   55% { transform: translateX(-4px); }
   80% { transform: translateX(3px); }
 }
+@keyframes said {
+  from { opacity: 0; transform: translateX(-6px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
 .bump { animation: bump 380ms cubic-bezier(0.2, 1.6, 0.4, 1); }
+.said { animation: said 320ms ease-out; }
+#eta.urgent { animation: throb 620ms ease-in-out infinite; font-weight: 700; }
 .ticket { transition: filter 200ms; }
 .ticket.reject { animation: reject 420ms ease-out; filter: sepia(0.5) hue-rotate(-25deg); }
 #btn-mute.off { color: var(--ink-dim); border-color: var(--rule); opacity: 0.7; }
 
 @media (prefers-reduced-motion: reduce) {
   .fill, .window { transition: none; }
-  .bump, .ticket.reject, .track.on-target { animation: none; }
+  .bump, .ticket.reject, .track.on-target, .said, .diner-name.hunting,
+  #eta.urgent { animation: none; }
 }
 </style>
 </head>
@@ -183,15 +207,20 @@ button:focus-visible { outline: 2px solid var(--mint); outline-offset: 2px; }
   </header>
 
   <dl class="readouts">
-    <div><dt>Kaiju ETA</dt><dd id="eta">--</dd></div>
+    <div><dt id="eta-label">Kaiju ETA</dt><dd id="eta">--</dd></div>
     <div><dt>Hunger</dt><dd id="hunger">100</dd></div>
     <div><dt>Payloads</dt><dd id="payloads">5</dd></div>
     <div><dt>Score</dt><dd id="score">0</dd></div>
   </dl>
 
   <div class="ticket">
-    <div class="ticket-head">Order up · table 1 · the kaiju</div>
+    <div class="ticket-head">Order up · table 1 · <span id="ticket-for">the kaiju</span></div>
     <div class="ticket-line">1× <span id="ticket-done">—</span>, seasoned <span id="ticket-spice">—</span></div>
+  </div>
+
+  <div class="diner">
+    <span class="diner-name" id="kaiju-name">—</span>
+    <span class="diner-say" id="kaiju-say"></span>
   </div>
 
   <canvas id="stage" width="640" height="430"></canvas>

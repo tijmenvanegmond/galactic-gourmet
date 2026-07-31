@@ -168,6 +168,15 @@ export const sfx = {
   drift(): void {
     tone(300, 0.6, { type: 'sine', to: 70, gain: 0.18 });
   },
+  growl(): void {
+    tone(78, 0.45, { type: 'sawtooth', to: 54, gain: 0.26 });
+    tone(117, 0.40, { type: 'square', to: 82, gain: 0.10 });
+  },
+  roar(): void {
+    tone(140, 0.55, { type: 'sawtooth', to: 46, gain: 0.34 });
+    tone(72, 0.55, { type: 'square', to: 38, gain: 0.22 });
+    hit(0.45, 780, 0.30, 'bandpass');
+  },
   stage(): void {
     hit(0.16, 700, 0.40);
     tone(120, 0.18, { type: 'square', to: 60, gain: 0.22 });

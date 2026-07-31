@@ -135,11 +135,44 @@ export const SOL: Level = {
   payloads: 5,
   hunger: 100,
   kaiju: {
-    speed: 0.20,
+    speed: 0.20,           // patient cruise toward the planet — the doom clock
     spawnRadius: 1300,
     spawnAngleOffset: 0.6,
     captureRadius: 34,
     rejectSpeedup: 1.30,   // feeding it something inedible makes it angrier
+    // Hunting. Chase and lunge are absolute speeds rather than multiples of
+    // the cruise, because they have to beat a planet's orbital motion (~1.3
+    // units/sim-second) or a parked dish could never be caught.
+    senseRadius: 300,
+    loseInterest: 1.35,
+    lungeRadius: 120,
+    chaseSpeed: 1.50,
+    lungeSpeed: 3.60,
+    grabReach: 18,
+    // It does not dive straight at the planet. It pulls up at this ring and
+    // prowls, which is the window you actually get to cook in — and it is
+    // close enough that feeding it becomes a much shorter shot.
+    loiterRadius: 185,
+    // Must beat Earth's own orbital motion (~1.3 units/sim-second) or it could
+    // never hold station once it arrived — the ring would slide out from under
+    // it every lap.
+    loiterSpeed: 1.80,
+    loiterLead: 0.30,
+    // Once it stops waiting it charges. The slow cruise is for crossing deep
+    // space, not for the last two hundred units.
+    devourSpeed: 2.40,
+    patience: 900,        // sim-seconds; ≈37s of wall clock at dt 0.40
+    patienceServe: 260,   // a dish it likes buys you this much more
+    patienceReject: 220,  // an insult costs this much, on top of the speed-up
+    // Serpent body.
+    segments: 11,
+    segmentSpacing: 13,
+    headRadius: 21,
+    tailRadius: 4.5,
+    slitherAmp: 0.62,
+    slitherChase: 0.30,
+    slitherStrike: 0.06,
+    slitherFreq: 0.10,
   },
 };
 

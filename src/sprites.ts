@@ -244,54 +244,118 @@ function makeStar(): Sprite {
 }
 
 // --- kaiju ------------------------------------------------------------------
-// Body only. The maw, eyes and rage tint animate, so the renderer draws those.
+// A serpent: one head sprite and one body-link sprite, both drawn nose-first
+// along +x so the renderer can point them down the chain. The maw, eyes and
+// rage tint animate, so the renderer draws those on top.
 
-function makeKaiju(): Sprite {
-  const r = 26;
-  const size = r * 2.6;
+/** Nominal radius the body link is baked at; the renderer scales from this. */
+export const SEGMENT_UNIT = 16;
 
-  return bake(size, size, c => {
-    const rand = rng(seedOf('kaiju'));
+function makeKaijuHead(): Sprite {
+  const w = 62, h = 46;
 
-    // spines
-    c.fillStyle = shade(PALETTE.kaijuBody, 0.72);
-    for (let i = 0; i < 7; i++) {
-      const a = -Math.PI + (i / 6) * Math.PI;
-      const len = r * (0.26 + rand() * 0.20);
+  return bake(w, h, c => {
+    const rand = rng(seedOf('kaiju-head'));
+    const skin = c.createRadialGradient(-4, -8, 3, 0, 0, 30);
+    skin.addColorStop(0, shade(PALETTE.kaijuBody, 1.5));
+    skin.addColorStop(0.6, PALETTE.kaijuBody);
+    skin.addColorStop(1, shade(PALETTE.kaijuBody, 0.6));
+
+    // swept-back horns
+    c.fillStyle = shade(PALETTE.kaijuBody, 0.66);
+    for (const side of [-1, 1]) {
       c.beginPath();
-      c.moveTo(Math.cos(a - 0.16) * r * 0.94, Math.sin(a - 0.16) * r * 0.94);
-      c.lineTo(Math.cos(a) * (r + len), Math.sin(a) * (r + len));
-      c.lineTo(Math.cos(a + 0.16) * r * 0.94, Math.sin(a + 0.16) * r * 0.94);
+      c.moveTo(-4, side * 12);
+      c.quadraticCurveTo(-18, side * 24, -27, side * 20);
+      c.quadraticCurveTo(-16, side * 12, -6, side * 8);
       c.closePath(); c.fill();
     }
 
-    // lumpy body
+    // skull: wide at the back, tapering to a snout
     c.beginPath();
-    const lobes = 14;
-    for (let i = 0; i <= lobes; i++) {
-      const a = (i / lobes) * Math.PI * 2;
-      const rr = r * (0.92 + rand() * 0.12);
-      const x = Math.cos(a) * rr, y = Math.sin(a) * rr;
-      i ? c.lineTo(x, y) : c.moveTo(x, y);
-    }
+    c.moveTo(26, 0);
+    c.quadraticCurveTo(20, -12, 6, -16);
+    c.quadraticCurveTo(-12, -19, -22, -11);
+    c.quadraticCurveTo(-27, 0, -22, 11);
+    c.quadraticCurveTo(-12, 19, 6, 16);
+    c.quadraticCurveTo(20, 12, 26, 0);
     c.closePath();
-    const skin = c.createRadialGradient(-r * 0.3, -r * 0.4, r * 0.1, 0, 0, r * 1.1);
-    skin.addColorStop(0, shade(PALETTE.kaijuBody, 1.45));
-    skin.addColorStop(0.6, PALETTE.kaijuBody);
-    skin.addColorStop(1, shade(PALETTE.kaijuBody, 0.62));
     c.fillStyle = skin;
     c.fill();
     c.strokeStyle = PALETTE.kaijuEdge;
-    c.lineWidth = 1.2;
+    c.lineWidth = 1.1;
     c.stroke();
 
-    // warts
-    c.fillStyle = rgba(PALETTE.kaijuEdge, 0.35);
-    for (let i = 0; i < 10; i++) {
-      const a = rand() * Math.PI * 2;
-      const d = Math.sqrt(rand()) * r * 0.8;
+    // brow ridges
+    c.fillStyle = rgba(PALETTE.kaijuEdge, 0.40);
+    for (const side of [-1, 1]) {
       c.beginPath();
-      c.arc(Math.cos(a) * d, Math.sin(a) * d, r * (0.04 + rand() * 0.06), 0, Math.PI * 2);
+      c.ellipse(-3, side * 11, 9, 3.4, side * 0.24, 0, Math.PI * 2);
+      c.fill();
+    }
+
+    // scales
+    c.fillStyle = rgba(PALETTE.kaijuEdge, 0.28);
+    for (let i = 0; i < 12; i++) {
+      const x = -20 + rand() * 36;
+      const y = (rand() * 2 - 1) * 12;
+      c.beginPath();
+      c.arc(x, y, 0.8 + rand() * 1.5, 0, Math.PI * 2);
+      c.fill();
+    }
+
+    // nostrils
+    c.fillStyle = rgba(PALETTE.kaijuEdge, 0.75);
+    for (const side of [-1, 1]) {
+      c.beginPath();
+      c.ellipse(19, side * 4.5, 1.6, 1.1, 0, 0, Math.PI * 2);
+      c.fill();
+    }
+  });
+}
+
+function makeKaijuSegment(): Sprite {
+  const r = SEGMENT_UNIT;
+  const size = r * 2.9;
+
+  return bake(size, size, c => {
+    const rand = rng(seedOf('kaiju-segment'));
+
+    // dorsal spikes, swept back
+    c.fillStyle = shade(PALETTE.kaijuBody, 0.66);
+    for (const side of [-1, 1]) {
+      c.beginPath();
+      c.moveTo(2, side * r * 0.7);
+      c.lineTo(-r * 0.5, side * r * 1.5);
+      c.lineTo(-r * 0.6, side * r * 0.5);
+      c.closePath(); c.fill();
+    }
+
+    // the link itself, slightly longer than it is wide
+    c.beginPath();
+    c.ellipse(0, 0, r * 1.06, r * 0.94, 0, 0, Math.PI * 2);
+    const skin = c.createRadialGradient(-r * 0.25, -r * 0.35, r * 0.1, 0, 0, r * 1.15);
+    skin.addColorStop(0, shade(PALETTE.kaijuBody, 1.42));
+    skin.addColorStop(0.6, PALETTE.kaijuBody);
+    skin.addColorStop(1, shade(PALETTE.kaijuBody, 0.58));
+    c.fillStyle = skin;
+    c.fill();
+    c.strokeStyle = PALETTE.kaijuEdge;
+    c.lineWidth = 1.1;
+    c.stroke();
+
+    // spine ridge running down the back, seen from above
+    c.fillStyle = rgba(PALETTE.kaijuEye, 0.14);
+    c.beginPath();
+    c.ellipse(0, 0, r * 0.78, r * 0.30, 0, 0, Math.PI * 2);
+    c.fill();
+
+    c.fillStyle = rgba(PALETTE.kaijuEdge, 0.30);
+    for (let i = 0; i < 6; i++) {
+      const a = rand() * Math.PI * 2;
+      const d = Math.sqrt(rand()) * r * 0.75;
+      c.beginPath();
+      c.arc(Math.cos(a) * d, Math.sin(a) * d, r * (0.05 + rand() * 0.07), 0, Math.PI * 2);
       c.fill();
     }
   });
@@ -378,7 +442,8 @@ const planets = new Map<string, Sprite>();
 const dishes = new Map<number, Sprite>();
 const pips = new Map<SpiceName, Sprite>();
 let star: Sprite | null = null;
-let kaiju: Sprite | null = null;
+let kaijuHead: Sprite | null = null;
+let kaijuSegment: Sprite | null = null;
 
 export function planetSprite(p: Planet): Sprite {
   let s = planets.get(p.name);
@@ -391,9 +456,14 @@ export function starSprite(): Sprite {
   return star;
 }
 
-export function kaijuSprite(): Sprite {
-  if (!kaiju) kaiju = makeKaiju();
-  return kaiju;
+export function kaijuHeadSprite(): Sprite {
+  if (!kaijuHead) kaijuHead = makeKaijuHead();
+  return kaijuHead;
+}
+
+export function kaijuSegmentSprite(): Sprite {
+  if (!kaijuSegment) kaijuSegment = makeKaijuSegment();
+  return kaijuSegment;
 }
 
 export function dishSprite(bandIndex: number): Sprite {

@@ -1,6 +1,6 @@
 import { SIM, SPICES, STAGES } from './config';
 import { heatMultiplier, scoreMultiplier, bandByLabel } from './world';
-import type { BandLabel, Order, Payload, SpiceName } from './types';
+import type { BandLabel, KaijuMode, Order, Payload, SpiceName } from './types';
 
 function el<T extends HTMLElement = HTMLElement>(id: string): T {
   const node = document.getElementById(id);
@@ -16,12 +16,16 @@ function query<T extends HTMLElement = HTMLElement>(selector: string): T {
 
 export const dom = {
   eta: el('eta'),
+  etaLabel: el('eta-label'),
   hunger: el('hunger'),
   payloads: el('payloads'),
   score: el('score'),
   ticket: query('.ticket'),
+  ticketFor: el('ticket-for'),
   ticketDone: el('ticket-done'),
   ticketSpice: el('ticket-spice'),
+  kaijuName: el('kaiju-name'),
+  kaijuSay: el('kaiju-say'),
   roastTrack: query('.gauge .track'),
   roastBar: el('roast-bar'),
   roastLabel: el('roast-label'),
@@ -81,8 +85,45 @@ export function step(): void {
   dom.score.textContent = String(shown);
 }
 
-export function setEta(seconds: number): void {
+/** The diner has a name, and it goes on the ticket. */
+export function setKaijuName(name: string): void {
+  dom.kaijuName.textContent = name;
+  dom.ticketFor.textContent = name;
+}
+
+// Ambient barks fire on state transitions that can land in the same frame, so
+// a quiet one is dropped rather than allowed to stomp the line before it.
+// Anything the player must read — a verdict, an ending — forces its way in.
+let lastSaid = -Infinity;
+const SAY_COOLDOWN = 900;
+
+export function say(line: string, force = false): void {
+  const now = performance.now();
+  if (!force && now - lastSaid < SAY_COOLDOWN) return;
+  lastSaid = now;
+  dom.kaijuSay.textContent = `“${line}”`;
+  dom.kaijuSay.classList.remove('said');
+  void dom.kaijuSay.offsetWidth;
+  dom.kaijuSay.classList.add('said');
+}
+
+export function setKaijuMood(mode: KaijuMode): void {
+  dom.kaijuName.classList.toggle(
+    'hunting', mode === 'chase' || mode === 'lunge' || mode === 'devour',
+  );
+}
+
+/**
+ * One readout, two meanings: time until it turns up, then how long it will
+ * tolerate waiting once it has.
+ */
+export function setClock(label: string, seconds: number, urgent: boolean): void {
+  if (dom.etaLabel.textContent !== label) {
+    dom.etaLabel.textContent = label;
+    bump(dom.eta);
+  }
   dom.eta.textContent = `${seconds}s`;
+  dom.eta.classList.toggle('urgent', urgent);
 }
 
 export function setTicket(order: Order): void {

@@ -10,7 +10,10 @@ import {
   createPayload, stepPayload, jettison, currentStage, relaunch,
   LOST_TO_STAR,
 } from './payload';
-import { createKaiju, stepKaiju, etaSeconds, enrage } from './kaiju';
+import {
+  createKaiju, stepKaiju, kaijuClock, enrage, appease, grabRadius,
+} from './kaiju';
+import { bark, shortName } from './voice';
 import {
   createCamera, followPayload, followOrbit, followHome, settleZoom, toWorld, kick,
 } from './camera';
@@ -78,6 +81,9 @@ export function startGame(canvas: HTMLCanvasElement): void {
     state = createState();
 
     hud.resetCounters();
+    hud.setKaijuName(state.kaiju.name);
+    hud.setKaijuMood('hunt');
+    hud.say(bark('arrive'), true);
     hud.setTicket(state.order);
     hud.setCounters(state);
     hud.setRoast(0, 'raw', false);
@@ -275,25 +281,35 @@ export function startGame(canvas: HTMLCanvasElement): void {
 
       state.score += points;
       state.hunger = Math.max(0, state.hunger - points);
-      state.kaiju.chew = 1;
 
       if (points === 0) {
-        enrage(state.kaiju, state.level.kaiju.rejectSpeedup);
-        hud.setStatus(`Rejected — ${b.label}. The kaiju speeds up.`);
+        // An insult costs it patience as well as making it faster.
+        const lost = enrage(state.kaiju, state.level.kaiju);
+        hud.setStatus(
+          `Rejected — ${b.label}. ${shortName(state.kaiju.name)} speeds up, −${lost}s patience.`);
+        hud.say(bark('reject'), true);
         hud.rejectTicket();
         flash(state.juice, PALETTE.kaijuRage, 0.35);
         shake(state.juice, 0.7);
         freeze(state.juice, JUICE.freezeReject);
         pop(state.juice, pod.x, pod.y - 18, 'REJECTED', PALETTE.kaijuRage, 14);
+        if (lost > 0) pop(state.juice, pod.x, pod.y - 36, `−${lost}s`, PALETTE.kaijuRage, 13);
         audio.sfx.reject();
       } else {
+        // A dish it likes buys you more time to cook the next one.
+        const gained = appease(state.kaiju, state.level.kaiju);
         const rack = pod.rack.length ? ` with ${pod.rack.join(' + ')}` : ' plain';
-        hud.setStatus(`Served ${b.label}${rack}. +${points}`);
+        const bought = gained > 0 ? ` +${gained}s patience.` : '';
+        hud.setStatus(`Served ${b.label}${rack}. +${points}.${bought}`);
+        hud.say(bark(got === want ? 'perfect' : 'good'), true);
         flash(state.juice, '#FFFFFF', points >= SCORE.exactBand ? 0.4 : 0.22);
         shake(state.juice, 0.45 + Math.min(0.4, points / 400));
         freeze(state.juice, JUICE.freezeServe);
         pop(state.juice, pod.x, pod.y - 18, `+${points}`, PALETTE.exhaust,
           points >= SCORE.exactBand ? 18 : 14);
+        if (gained > 0) {
+          pop(state.juice, pod.x, pod.y - 38, `+${gained}s`, PALETTE.heading, 13);
+        }
         audio.sfx.serve(got === want ? 2 : 1);
       }
       emit(pod.x, pod.y, b.fill, 34, 5, 'spark', 2.6);
@@ -329,14 +345,79 @@ export function startGame(canvas: HTMLCanvasElement): void {
       state.phase = 'won';
       flash(state.juice, PALETTE.heading, 0.5);
       audio.sfx.win();
-      hud.setStatus(`Kaiju satisfied. ${state.level.name} survives — final score ${state.score}. R to play again.`);
+      hud.say(bark('win'), true);
+      hud.setStatus(`${shortName(state.kaiju.name)} is satisfied. ${state.level.name} survives — final score ${state.score}. R to play again.`);
     } else if (state.payloads <= 0) {
       state.phase = 'lost';
       audio.sfx.lose();
+      hud.say(bark('lose'), true);
       hud.setStatus(`Out of payloads. Earth is on the menu — score ${state.score}. R to try again.`);
     } else {
       newOrder();
     }
+  }
+
+  // ---- the diner ----------------------------------------------------------
+  // It cruises at Earth until a dish comes within range, then forgets the
+  // planet entirely and goes after the food.
+  function stepDiner(): void {
+    const k = state.kaiju;
+    const cfg = state.level.kaiju;
+    const step = stepKaiju(k, state.t, state.home, state.pod, cfg);
+
+    if (step.spotted) {
+      hud.say(bark('spot'));
+      pop(state.juice, k.x, k.y - 36, 'SPOTTED YOU', PALETTE.kaijuRage, 12);
+      shake(state.juice, 0.18);
+      audio.sfx.growl();
+    }
+    if (step.lunged) {
+      const shout = bark('lunge');
+      hud.say(shout);
+      pop(state.juice, k.x, k.y - 32, shout, PALETTE.kaijuRage, 16);
+      ring(state.juice, k.x, k.y, PALETTE.kaijuRage, 4, 2.6, 0.04);
+      shake(state.juice, 0.32);
+      audio.sfx.roar();
+    }
+    if (step.loitered) {
+      hud.say(bark('loiter'), true);
+      pop(state.juice, k.x, k.y - 40, 'WAITING', PALETTE.kaijuRage, 12);
+      audio.sfx.growl();
+    }
+    if (step.impatient) {
+      hud.say(bark('impatient'), true);
+      shake(state.juice, 0.25);
+      audio.sfx.growl();
+    }
+    if (step.committed) {
+      hud.say(bark('devour'), true);
+      pop(state.juice, k.x, k.y - 40, 'DONE WAITING', PALETTE.kaijuRage, 15);
+      flash(state.juice, PALETTE.kaijuRage, 0.3);
+      ring(state.juice, k.x, k.y, PALETTE.kaijuRage, 5, 3, 0.03);
+      shake(state.juice, 0.6);
+      audio.sfx.roar();
+      hud.setStatus(`${shortName(k.name)} is done waiting. Earth is next.`);
+    }
+
+    hud.setKaijuMood(k.mode);
+
+    // drool, as one does
+    if ((k.mode === 'chase' || k.mode === 'lunge') && Math.random() < 0.35) {
+      emit(k.x + (Math.random() - 0.5) * 22, k.y + 14, PALETTE.heading, 1, 0.4,
+        'smoke', 1.6, 0.028);
+    }
+
+    if (step.reachedHome) {
+      state.phase = 'lost';
+      flash(state.juice, PALETTE.kaijuRage, 0.6);
+      shake(state.juice, 1);
+      audio.sfx.lose();
+      hud.say(bark('lose'), true);
+      hud.setStatus(`${shortName(k.name)} ate Earth. Score ${state.score}. R to try again.`);
+    }
+
+    const clock = kaijuClock(k, cfg);
+    hud.setClock(clock.label, clock.seconds, clock.urgent);
   }
 
   // ---- frame --------------------------------------------------------------
@@ -357,14 +438,7 @@ export function startGame(canvas: HTMLCanvasElement): void {
 
     state.t += SIM.dt;
 
-    if (stepKaiju(state.kaiju, state.t, state.home)) {
-      state.phase = 'lost';
-      flash(j, PALETTE.kaijuRage, 0.6);
-      shake(j, 1);
-      audio.sfx.lose();
-      hud.setStatus(`The kaiju ate Earth. Score ${state.score}. R to try again.`);
-    }
-    hud.setEta(etaSeconds(state.kaiju));
+    stepDiner();
 
     if (state.phase === 'aim' || state.phase === 'orbit') refreshAim();
 
@@ -384,7 +458,7 @@ export function startGame(canvas: HTMLCanvasElement): void {
       hud.setStage(pod);
 
       const k = state.kaiju;
-      if (Math.hypot(pod.x - k.x, pod.y - k.y) < state.level.kaiju.captureRadius) {
+      if (Math.hypot(pod.x - k.x, pod.y - k.y) < grabRadius(k, state.level.kaiju)) {
         resolve('', true);
       } else if (outcome.kind === 'captured') {
         onCapture(outcome.planet);

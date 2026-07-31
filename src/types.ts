@@ -64,7 +64,45 @@ export interface KaijuConfig {
   spawnAngleOffset: number;
   captureRadius: number;
   rejectSpeedup: number;
+  /** Inside this it forgets the planet and goes after the food. */
+  senseRadius: number;
+  /** Radii are multiplied by this before it gives up, so locks don't flicker. */
+  loseInterest: number;
+  /** Inside this it commits to the grab. */
+  lungeRadius: number;
+  /** Absolute speeds, not multipliers of the patient approach. */
+  chaseSpeed: number;
+  lungeSpeed: number;
+  /** Extra reach while mid-lunge. */
+  grabReach: number;
+  /** It stops here and prowls rather than going straight for the planet. */
+  loiterRadius: number;
+  loiterSpeed: number;
+  /** Committed charge at the planet once patience is gone. */
+  devourSpeed: number;
+  /** How far ahead on the ring it aims, which is what makes it circle. */
+  loiterLead: number;
+  /**
+   * Sim-seconds of patience while loitering. Divide by 60·dt for wall-clock.
+   * At the default dt of 0.40 that is 900 / 24 ≈ 37 seconds.
+   */
+  patience: number;
+  patienceServe: number;
+  patienceReject: number;
+  /** Body links trailing the head. */
+  segments: number;
+  segmentSpacing: number;
+  headRadius: number;
+  tailRadius: number;
+  /** Lateral weave, in radians off the bearing to the target. */
+  slitherAmp: number;
+  slitherChase: number;
+  /** A strike goes straight — the weave all but stops. */
+  slitherStrike: number;
+  slitherFreq: number;
 }
+
+export type KaijuMode = 'hunt' | 'loiter' | 'chase' | 'lunge' | 'devour';
 
 export interface Level {
   name: string;
@@ -127,6 +165,37 @@ export interface Kaiju {
   rage: number;
   /** Decaying chew animation after it is fed at all. */
   chew: number;
+  name: string;
+  mode: KaijuMode;
+  /** Direction of travel, for leaning into a lunge. */
+  heading: number;
+  /** 0..1 excitement; drives the maw, the drool and the grab reach. */
+  drool: number;
+  /** Body links, head-first. The head itself is `x`/`y`. */
+  segments: Vec2[];
+  /** Phase of the lateral weave. */
+  phase: number;
+  /** Sim-seconds left before it stops waiting and goes for the planet. */
+  patience: number;
+  /** Has it reached the prowling ring at least once. */
+  arrived: boolean;
+  /** Once true it is committed to Earth and food no longer distracts it. */
+  devouring: boolean;
+  /** Latch for the running-out-of-patience line. */
+  grumbled: boolean;
+}
+
+/** What the kaiju did this step, so the caller can react once per transition. */
+export interface KaijuStep {
+  reachedHome: boolean;
+  spotted: boolean;
+  lunged: boolean;
+  /** Just settled into the prowling ring. */
+  loitered: boolean;
+  /** Patience just crossed the low-water mark. */
+  impatient: boolean;
+  /** Patience just ran out. */
+  committed: boolean;
 }
 
 export interface Camera {

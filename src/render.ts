@@ -3,10 +3,12 @@ import { planetPos, bandFor, bandIndex } from './world';
 import { toScreen } from './camera';
 import { shakeTransform } from './juice';
 import {
-  drawSprite, planetSprite, starSprite, kaijuSprite, dishSprite, pipSprite,
+  drawSprite, planetSprite, starSprite, kaijuHeadSprite, kaijuSegmentSprite,
+  dishSprite, pipSprite, SEGMENT_UNIT,
 } from './sprites';
 import type {
-  Aim, Camera, GameState, Juice, Kaiju, Particle, Payload, Planet, SpiceName,
+  Aim, Camera, GameState, Juice, Kaiju, KaijuConfig, Particle, Payload, Planet,
+  SpiceName,
 } from './types';
 
 const TAU = Math.PI * 2;
@@ -120,60 +122,135 @@ function drawPlanets(
   }
 }
 
-function drawKaiju(ctx: Ctx, cam: Camera, kaiju: Kaiju, t: number): void {
+function drawKaiju(
+  ctx: Ctx,
+  cam: Camera,
+  kaiju: Kaiju,
+  t: number,
+  cfg: KaijuConfig,
+  showSense: boolean,
+): void {
   const s = toScreen(cam, kaiju.x, kaiju.y);
   const z = cam.zoom;
-  const bob = Math.sin(t * 0.06) * 2 * z;
-  const y = s.y + bob;
-
-  const aura = 0.7 + 0.3 * Math.sin(t * 0.07);
-  ctx.fillStyle = PALETTE.kaijuAura;
-  ctx.beginPath(); ctx.arc(s.x, y, 46 * z * aura, 0, TAU); ctx.fill();
-
+  const hunting = kaiju.mode === 'chase' || kaiju.mode === 'lunge';
+  const drool = kaiju.drool;
   const chew = kaiju.chew;
-  drawSprite(ctx, kaijuSprite(), s.x, y, z, Math.sin(t * 0.03) * 0.08,
-    1, 1 + chew * 0.25, 1 - chew * 0.2);
 
-  // maw
-  const open = (4 + 9 * kaiju.mouth + chew * 10) * z;
+  // While a dish is in play, show how close is too close.
+  if (showSense) {
+    ctx.save();
+    ctx.translate(s.x, s.y);
+    ctx.rotate(-t * 0.006);
+    ctx.strokeStyle = PALETTE.kaijuRage;
+    ctx.globalAlpha = hunting ? 0.32 : 0.16;
+    ctx.setLineDash([6, 10]);
+    ctx.lineWidth = 1.2;
+    ctx.beginPath(); ctx.arc(0, 0, cfg.senseRadius * z, 0, TAU); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.globalAlpha = 1;
+    ctx.restore();
+  }
+
+  if (kaiju.mode === 'lunge') {
+    ctx.strokeStyle = PALETTE.kaijuRage;
+    ctx.lineWidth = 2;
+    for (let i = 1; i <= 3; i++) {
+      const d = 15 * i * z;
+      ctx.globalAlpha = 0.30 / i;
+      ctx.beginPath();
+      ctx.arc(s.x - Math.cos(kaiju.heading) * d, s.y - Math.sin(kaiju.heading) * d,
+        (26 - i * 4) * z, kaiju.heading + 2.2, kaiju.heading - 2.2);
+      ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  const aura = 0.7 + 0.3 * Math.sin(t * (hunting ? 0.22 : 0.07));
+  ctx.fillStyle = hunting ? 'rgba(216,90,48,0.22)' : PALETTE.kaijuAura;
+  ctx.beginPath(); ctx.arc(s.x, s.y, (46 + drool * 12) * z * aura, 0, TAU); ctx.fill();
+
+  // Body, tail first, so every link tucks under the one ahead of it.
+  const segs = kaiju.segments;
+  const n = segs.length;
+  const seg = kaijuSegmentSprite();
+  for (let i = n - 1; i >= 0; i--) {
+    const link = segs[i];
+    const ahead = i === 0 ? kaiju : segs[i - 1];
+    const p = toScreen(cam, link.x, link.y);
+    const taper = Math.pow(1 - (i + 1) / n, 0.7);
+    const radius = cfg.tailRadius + (cfg.headRadius - cfg.tailRadius) * taper;
+    drawSprite(ctx, seg, p.x, p.y, (radius / SEGMENT_UNIT) * z,
+      Math.atan2(ahead.y - link.y, ahead.x - link.x));
+  }
+
+  // Head, in its own rotated frame so everything below is in sprite units.
+  const rear = 1 + drool * 0.14;
+  ctx.save();
+  ctx.translate(s.x, s.y);
+  ctx.rotate(kaiju.heading);
+  ctx.scale(z * rear * (1 + chew * 0.18), z * rear * (1 - chew * 0.10));
+
+  const head = kaijuHeadSprite();
+  ctx.drawImage(head.canvas, -head.w / 2, -head.h / 2, head.w, head.h);
+
+  // Maw: a wedge hinged at the back of the jaw, gaping toward the snout.
+  const gape = 0.08 + kaiju.mouth * 0.40 + drool * 0.22 + chew * 0.16;
+  const hinge = -6, reach = 34;
+  const jx = hinge + Math.cos(gape) * reach;
+  const jy = Math.sin(gape) * reach;
   ctx.fillStyle = '#1B0A04';
   ctx.beginPath();
-  ctx.ellipse(s.x, y + 5 * z, 15 * z, open, 0, 0, TAU);
+  ctx.moveTo(hinge, 0);
+  ctx.lineTo(jx, -jy);
+  ctx.lineTo(jx, jy);
+  ctx.closePath();
   ctx.fill();
   ctx.fillStyle = PALETTE.sun;
   ctx.beginPath();
-  ctx.ellipse(s.x, y + 5 * z, 15 * z * 0.62, open * 0.5, 0, 0, TAU);
+  ctx.moveTo(hinge + 2, 0);
+  ctx.lineTo(hinge + 2 + (jx - hinge) * 0.45, -jy * 0.42);
+  ctx.lineTo(hinge + 2 + (jx - hinge) * 0.45, jy * 0.42);
+  ctx.closePath();
   ctx.fill();
 
-  // teeth
+  // Teeth along both jaws, pointing in at the gap.
   ctx.fillStyle = '#F1EFE8';
-  for (let i = -2; i <= 2; i++) {
-    const tx = s.x + i * 5.4 * z;
-    const ty = y + 5 * z - open;
-    ctx.beginPath();
-    ctx.moveTo(tx - 2 * z, ty);
-    ctx.lineTo(tx + 2 * z, ty);
-    ctx.lineTo(tx, ty + 4 * z);
-    ctx.closePath(); ctx.fill();
+  for (let i = 1; i <= 4; i++) {
+    const f = i / 4.6;
+    for (const side of [-1, 1]) {
+      const bx = hinge + Math.cos(gape) * reach * f;
+      const by = side * Math.sin(gape) * reach * f;
+      ctx.beginPath();
+      ctx.moveTo(bx - 2.2, by);
+      ctx.lineTo(bx + 2.2, by);
+      ctx.lineTo(bx + 0.6, by - side * 4.4);
+      ctx.closePath();
+      ctx.fill();
+    }
   }
 
-  // eyes, with a rage tint when it has been insulted
-  ctx.fillStyle = kaiju.rage > 0 ? PALETTE.kaijuRage : PALETTE.kaijuEye;
-  ctx.beginPath();
-  ctx.arc(s.x - 9 * z, y - 9 * z, (3.4 + kaiju.rage * 1.6) * z, 0, TAU);
-  ctx.arc(s.x + 9 * z, y - 9 * z, (3.4 + kaiju.rage * 1.6) * z, 0, TAU);
-  ctx.fill();
+  // Eyes: round while cruising, narrowed to a slit on the hunt.
+  const eyeR = 3.8 + kaiju.rage * 1.4;
+  const squint = hunting ? 0.40 : 1;
+  ctx.fillStyle = kaiju.rage > 0 || hunting ? PALETTE.kaijuRage : PALETTE.kaijuEye;
+  for (const side of [-1, 1]) {
+    ctx.beginPath();
+    ctx.ellipse(-2, side * 10.5, eyeR, eyeR * squint, 0, 0, TAU);
+    ctx.fill();
+  }
   ctx.fillStyle = '#12130F';
-  ctx.beginPath();
-  ctx.arc(s.x - 9 * z, y - 9 * z, 1.5 * z, 0, TAU);
-  ctx.arc(s.x + 9 * z, y - 9 * z, 1.5 * z, 0, TAU);
-  ctx.fill();
+  for (const side of [-1, 1]) {
+    ctx.beginPath();
+    ctx.ellipse(-1, side * 10.5, 1.2, eyeR * squint * 0.78, 0, 0, TAU);
+    ctx.fill();
+  }
+  ctx.restore();
 
   if (kaiju.rage > 0) {
     ctx.strokeStyle = PALETTE.kaijuRage;
     ctx.globalAlpha = kaiju.rage * 0.7;
     ctx.lineWidth = 2;
-    ctx.beginPath(); ctx.arc(s.x, y, 30 * z, 0, TAU); ctx.stroke();
+    ctx.beginPath(); ctx.arc(s.x, s.y, 34 * z, 0, TAU); ctx.stroke();
     ctx.globalAlpha = 1;
   }
 }
@@ -406,7 +483,17 @@ function drawMinimap(ctx: Ctx, state: GameState): void {
     ctx.beginPath(); ctx.arc(cx + q.x * k, cy + q.y * k, p.home ? 2.6 : 1.8, 0, TAU); ctx.fill();
   }
 
-  ctx.fillStyle = PALETTE.kaijuBody;
+  // the serpent, as a tapering string of dots
+  const segs = state.kaiju.segments;
+  for (let i = segs.length - 1; i >= 0; i--) {
+    ctx.fillStyle = PALETTE.kaijuBody;
+    ctx.globalAlpha = 0.5 + 0.5 * (1 - i / segs.length);
+    ctx.beginPath();
+    ctx.arc(cx + segs[i].x * k, cy + segs[i].y * k, 0.8 + 1.4 * (1 - i / segs.length), 0, TAU);
+    ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+  ctx.fillStyle = state.kaiju.devouring ? PALETTE.kaijuRage : PALETTE.kaijuBody;
   ctx.beginPath(); ctx.arc(cx + state.kaiju.x * k, cy + state.kaiju.y * k, 3.4, 0, TAU); ctx.fill();
 
   if (state.pod) {
@@ -458,7 +545,7 @@ export function render(ctx: Ctx, state: GameState): void {
     drawSprite(ctx, dishSprite(g.band), s.x, s.y, 0.7, 0, Math.min(1, g.life) * 0.7);
   }
 
-  drawKaiju(ctx, cam, kaiju, t);
+  drawKaiju(ctx, cam, kaiju, t, level.kaiju, pod !== null);
   if (aim) drawAim(ctx, cam, aim, t);
   if (pod) drawPayload(ctx, cam, pod, t);
   drawParticles(ctx, cam, particles);
