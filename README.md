@@ -60,13 +60,13 @@ underscore.
 ## Layout
 
 ```
-index.html          shell + HUD markup + styling
+index.html          the canvas, and the little chrome left around it
 src/types.ts        shared data shapes, imported type-only
 src/config.ts       every tunable number. Logic files contain none.
 src/world.ts        orbital kinematics, gravity field, heat field, spice rings
 src/trajectory.ts   forward prediction (shares the integrator with flight)
 src/payload.ts      payload state: thrust, staging, roasting, pickup
-src/kaiju.ts        approach behaviour and ETA
+src/kaiju.ts        the tour, the hunt, patience
 src/camera.ts       follow, zoom, world<->screen transforms
 src/sprites.ts      offscreen sprite baking — all art is drawn by code
 src/juice.ts        shake, hit-stop, flashes, shockwaves, floating text
@@ -74,7 +74,7 @@ src/audio.ts        synthesised sound; no files, just oscillators and noise
 src/render.ts       all canvas drawing
 src/panels.ts       the HUD, drawn onto the canvas: profile, console, minimap
 src/hud.ts          the little DOM chrome left outside the frame
-src/input.ts        pointer, keyboard, on-screen buttons
+src/input.ts        pointer and keyboard
 src/game.ts         state machine, scoring, frame loop
 src/main.ts         entry point — grabs the canvas, starts the game
 ```
