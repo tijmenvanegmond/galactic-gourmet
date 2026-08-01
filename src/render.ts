@@ -21,11 +21,13 @@ const mod = (a: number, n: number): number => ((a % n) + n) % n;
 // --- parallax starfield -----------------------------------------------------
 // Generated once and wrapped modulo the viewport, so it scrolls forever.
 
-interface Star { x: number; y: number; r: number; phase: number; tint: string }
+// Positions are normalised, so the field still fills the canvas after a resize
+// rather than clustering inside whatever the width happened to be at startup.
+interface Star { nx: number; ny: number; r: number; phase: number; tint: string }
 
 const STARS: Star[] = Array.from({ length: JUICE.starCount }, () => ({
-  x: Math.random() * VIEW.width,
-  y: Math.random() * VIEW.height,
+  nx: Math.random(),
+  ny: Math.random(),
   r: 0.4 + Math.random() * 1.3,
   phase: Math.random() * TAU,
   tint: Math.random() > 0.85 ? PALETTE.heading : PALETTE.star,
@@ -34,8 +36,8 @@ const STARS: Star[] = Array.from({ length: JUICE.starCount }, () => ({
 function drawStarfield(ctx: Ctx, cam: Camera, t: number): void {
   const par = JUICE.starParallax;
   for (const s of STARS) {
-    const x = mod(s.x - cam.x * par, VIEW.width);
-    const y = mod(s.y - cam.y * par, VIEW.height);
+    const x = mod(s.nx * VIEW.width - cam.x * par, VIEW.width);
+    const y = mod(s.ny * VIEW.height - cam.y * par, VIEW.height);
     ctx.globalAlpha = 0.22 + 0.30 * (0.5 + 0.5 * Math.sin(t * 0.08 + s.phase));
     ctx.fillStyle = s.tint;
     ctx.beginPath(); ctx.arc(x, y, s.r, 0, TAU); ctx.fill();

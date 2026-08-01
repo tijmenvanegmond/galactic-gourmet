@@ -35,11 +35,18 @@
       }
       .shell {
         width: 100%;
-        max-width: 680px;
       }
 
+      /*
+        The canvas has no width/height attributes, so CSS is the only thing
+        that decides its size. It needs an explicit height or it falls back to
+        the 150px intrinsic default. src/viewport.ts matches the backing store
+        to whatever size this produces, so growing the box shows more of the
+        system rather than stretching it.
+      */
       canvas {
         width: 100%;
+        height: clamp(340px, 64vh, 820px);
         display: block;
         background: var(--panel);
         border: 1px solid var(--rule);
@@ -96,9 +103,9 @@
   </head>
   <body>
     <div class="shell">
-      <canvas id="stage" width="640" height="480"></canvas>
-
       <p id="status">Drag back from Earth and release.</p>
+      
+      <canvas id="stage"></canvas>
 
       <div class="speed">
         <label for="speed">Sim speed</label>

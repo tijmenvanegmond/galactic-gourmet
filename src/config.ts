@@ -13,10 +13,11 @@ export const SIM = {
   dtMax: 1.00,
 };
 
+// The live viewport in CSS pixels. These are only the values before the first
+// fit — viewport.ts overwrites both from the canvas's real size and keeps them
+// current, so a resize shows more or less of the world instead of stretching.
 export const VIEW = {
   width: 640,
-  // Taller than the old 430: the bottom strip is the kitchen console now, so
-  // the playfield keeps roughly the room it had before the HUD moved in.
   height: 480,
 };
 

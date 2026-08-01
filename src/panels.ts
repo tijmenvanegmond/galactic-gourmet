@@ -178,7 +178,9 @@ function drawChatter(ctx: Ctx, state: GameState): void {
   const m = PANELS.margin;
   const y = m + PANELS.profileHeight + 14;
   ctx.font = `italic 400 10px ${MONO}`;
-  const lines = wrap(ctx, `“${line}”`, PANELS.chatterWidth, 2);
+  // Its first line sits level with the minimap, so keep clear of it.
+  const room = Math.min(PANELS.chatterWidth, VIEW.width - 88 - PANELS.margin * 3);
+  const lines = wrap(ctx, `“${line}”`, Math.max(120, room), 2);
   const alpha = 0.45 + 0.55 * Math.max(0, Math.min(1, life));
   lines.forEach((text, i) => {
     label(ctx, text, m + 2, y + i * 13,
@@ -193,6 +195,19 @@ function drawConsole(ctx: Ctx, state: GameState): void {
   const y = VIEW.height - h;
   const pod = state.pod;
 
+  // Three columns: the order pinned left, dishes and score pinned right, the
+  // gauges taking the slack between them. The gauges are capped so a very wide
+  // canvas leaves a gap rather than a comically long roast bar, and below a
+  // phone-ish width the columns tighten and the place settings become a count,
+  // which is the difference between cramped and off the edge entirely.
+  const compact = VIEW.width < 560;
+  const leftW = compact ? 120 : 200;
+  const rightW = compact ? 96 : 176;
+  const gx = leftW + 12;
+  const rightX = VIEW.width - rightW;
+  const gw = Math.max(80, Math.min(300, rightX - gx - 16));
+  const leftRight = leftW;
+
   ctx.fillStyle = 'rgba(18,19,15,0.82)';
   ctx.fillRect(0, y, VIEW.width, h);
   ctx.strokeStyle = 'rgba(140,138,130,0.34)';
@@ -206,7 +221,7 @@ function drawConsole(ctx: Ctx, state: GameState): void {
   const ordered = bandByLabel(order.doneness);
   label(ctx, 'ORDER UP', 12, y + 15, { size: 8, spacing: 1.4, alpha: 0.7 });
   label(ctx, order.doneness.toUpperCase(), 12, y + 33,
-    { size: 13, weight: 700, color: ordered.fill });
+    { size: compact ? 11 : 13, weight: 700, color: ordered.fill });
   drawSprite(ctx, pipSprite(order.spice), 17, y + 46, 0.9);
   label(ctx, order.spice, 26, y + 49, { size: 10, color: SPICES[order.spice].color });
 
@@ -214,21 +229,26 @@ function drawConsole(ctx: Ctx, state: GameState): void {
   // doneness ("lightly toasted") can never run into it.
   const rack: SpiceName[] = pod ? pod.rack : [];
   if (rack.length) {
-    const right = 200;
-    label(ctx, 'ON BOARD', right, y + 36, { size: 7, align: 'right', alpha: 0.6 });
-    const start = right - rack.length * 13 + 6;
+    label(ctx, 'ON BOARD', leftRight, y + 36, { size: 7, align: 'right', alpha: 0.6 });
+    const start = leftRight - rack.length * 13 + 6;
     rack.forEach((s, i) => drawSprite(ctx, pipSprite(s), start + i * 13, y + 46, 0.85));
   }
 
   // --- roast and fuel ---
-  const gx = 212, gw = 240;
   const heat = pod ? pod.heat : 0;
   const band = bandFor(heat);
   const onTarget = band.label === order.doneness;
 
-  label(ctx, 'ROAST', gx, y + 15, { size: 8, spacing: 1.4, alpha: 0.7 });
-  label(ctx, band.label, gx + gw, y + 15,
-    { size: 10, align: 'right', color: onTarget ? PALETTE.exhaust : PALETTE.label });
+  // Narrow: the value replaces the caption rather than sitting opposite it,
+  // where the two would collide on a long band name.
+  if (compact) {
+    label(ctx, band.label.toUpperCase(), gx, y + 15,
+      { size: 8, spacing: 0.5, color: onTarget ? PALETTE.exhaust : PALETTE.label });
+  } else {
+    label(ctx, 'ROAST', gx, y + 15, { size: 8, spacing: 1.4, alpha: 0.7 });
+    label(ctx, band.label, gx + gw, y + 15,
+      { size: 10, align: 'right', color: onTarget ? PALETTE.exhaust : PALETTE.label });
+  }
   meter(ctx, gx, y + 20, gw, 9, Math.min(100, heat) / 100, PALETTE.exhaust,
     { lo: ordered.lo, hi: ordered.hi });
   if (onTarget) {
@@ -241,27 +261,35 @@ function drawConsole(ctx: Ctx, state: GameState): void {
 
   const stage = pod ? STAGES[pod.stage] : STAGES[0];
   const fuel = pod ? pod.fuel / stage.fuel : 1;
-  label(ctx, 'FUEL', gx, y + 47, { size: 8, spacing: 1.4, alpha: 0.7 });
-  label(ctx, pod && pod.orbit
+  const stageText = pod && pod.orbit
     ? `parked · ${pod.orbit.planet.name.toLowerCase()} orbit`
-    : `stage ${(pod ? pod.stage : 0) + 1} · ${stage.name}`,
-  gx + gw, y + 47, { size: 9, align: 'right', alpha: 0.85 });
+    : `stage ${(pod ? pod.stage : 0) + 1} · ${stage.name}`;
+  if (compact) {
+    label(ctx, stageText, gx, y + 47, { size: 8, alpha: 0.85 });
+  } else {
+    label(ctx, 'FUEL', gx, y + 47, { size: 8, spacing: 1.4, alpha: 0.7 });
+    label(ctx, stageText, gx + gw, y + 47, { size: 9, align: 'right', alpha: 0.85 });
+  }
   meter(ctx, gx, y + 52, gw, 6, fuel, PALETTE.heading);
 
   // --- dishes and score ---
-  const cx = 470;
+  const cx = rightX;
   label(ctx, 'DISHES', cx, y + 15, { size: 8, spacing: 1.4, alpha: 0.7 });
-  for (let i = 0; i < state.level.payloads; i++) {
-    const dx = cx + 9 + i * 20;
-    if (i < state.payloads) {
-      drawSprite(ctx, dishSprite(0), dx, y + 32, 0.72);
-    } else {
-      // a cleared place setting
-      ctx.strokeStyle = 'rgba(140,138,130,0.30)';
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      ctx.arc(dx, y + 32, 7, 0, TAU);
-      ctx.stroke();
+  if (compact) {
+    label(ctx, `×${state.payloads}`, cx + 2, y + 34, { size: 15, weight: 700, color: PALETTE.ink });
+  } else {
+    for (let i = 0; i < state.level.payloads; i++) {
+      const dx = cx + 9 + i * 20;
+      if (i < state.payloads) {
+        drawSprite(ctx, dishSprite(0), dx, y + 32, 0.72);
+      } else {
+        // a cleared place setting
+        ctx.strokeStyle = 'rgba(140,138,130,0.30)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.arc(dx, y + 32, 7, 0, TAU);
+        ctx.stroke();
+      }
     }
   }
 

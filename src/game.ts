@@ -1,6 +1,7 @@
 import {
-  SIM, VIEW, LAUNCH, SPICES, SPICE_NAMES, SERVEABLE, SCORE, SOL, PALETTE, JUICE,
+  SIM, LAUNCH, SPICES, SPICE_NAMES, SERVEABLE, SCORE, SOL, PALETTE, JUICE,
 } from './config';
+import { watchViewport } from './viewport';
 import {
   planetPos, planetVel, homePlanet, bandFor, bandIndex,
   scoreMultiplier, heatProximity,
@@ -37,8 +38,7 @@ const clamp01 = (v: number): number => Math.max(0, Math.min(1, v));
 
 export function startGame(canvas: HTMLCanvasElement): void {
   const ctx = context2d(canvas);
-  canvas.width = VIEW.width;
-  canvas.height = VIEW.height;
+  watchViewport(canvas, ctx);
 
   const input = createInput();
 
