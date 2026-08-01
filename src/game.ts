@@ -11,7 +11,7 @@ import {
   LOST_TO_STAR,
 } from './payload';
 import {
-  createKaiju, stepKaiju, kaijuClock, enrage, appease, grabRadius,
+  createKaiju, stepKaiju, kaijuClock, enrage, appease, grabRadius, currentStop,
 } from './kaiju';
 import { bark, shortName } from './voice';
 import {
@@ -380,8 +380,18 @@ export function startGame(canvas: HTMLCanvasElement): void {
       audio.sfx.roar();
     }
     if (step.loitered) {
-      hud.say(bark('loiter'), true);
-      pop(state.juice, k.x, k.y - 40, 'WAITING', PALETTE.kaijuRage, 12);
+      // Arriving at Earth is the run's clock starting; arriving anywhere else
+      // is just the next course.
+      const stop = currentStop(k);
+      hud.say(bark(stop.home ? 'loiter' : 'visit'), true);
+      pop(state.juice, k.x, k.y - 40, stop.name.toUpperCase(), PALETTE.kaijuRage, 12);
+      hud.setStatus(`${shortName(k.name)} is prowling ${stop.name}. Feed it there.`);
+      audio.sfx.growl();
+    }
+    if (step.movedOn) {
+      hud.say(bark('movedOn'), true);
+      pop(state.juice, k.x, k.y - 40, `→ ${currentStop(k).name.toUpperCase()}`,
+        PALETTE.kaijuRage, 13);
       audio.sfx.growl();
     }
     if (step.impatient) {

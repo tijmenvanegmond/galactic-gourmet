@@ -5,6 +5,16 @@ import type {
   Kaiju, KaijuConfig, KaijuMode, KaijuStep, Level, Payload, Planet, Vec2,
 } from './types';
 
+/** How long it will hang around a given world before moving on. */
+function dwellFor(planet: Planet, cfg: KaijuConfig): number {
+  return planet.home ? cfg.patience : cfg.visitTime;
+}
+
+/** The world it is at, or on its way to. */
+export function currentStop(kaiju: Kaiju): Planet {
+  return kaiju.tour[kaiju.stop];
+}
+
 export function createKaiju(level: Level, home: Planet, t: number): Kaiju {
   const cfg = level.kaiju;
   const h = planetPos(home, t);
@@ -12,6 +22,11 @@ export function createKaiju(level: Level, home: Planet, t: number): Kaiju {
   const x = Math.cos(angle) * cfg.spawnRadius;
   const y = Math.sin(angle) * cfg.spawnRadius;
   const heading = Math.atan2(h.y - y, h.x - x);
+
+  // It works its way inward through the system and saves home for last, which
+  // is both the sensible approach from deep space and the better joke.
+  const tour = level.planets.filter(p => !p.home).sort((a, b) => b.orbit - a.orbit);
+  tour.push(home);
 
   // Laid out behind the head so it arrives already stretched out rather than
   // unfurling from a single point.
@@ -36,7 +51,10 @@ export function createKaiju(level: Level, home: Planet, t: number): Kaiju {
     drool: 0,
     segments,
     phase: 0,
-    patience: cfg.patience,
+    tour,
+    stop: 0,
+    patience: dwellFor(tour[0], cfg),
+    patienceMax: dwellFor(tour[0], cfg),
     arrived: false,
     devouring: false,
     grumbled: false,
@@ -47,7 +65,7 @@ export function createKaiju(level: Level, home: Planet, t: number): Kaiju {
  * Which mode it is in. Thresholds widen by `loseInterest` once a lock is held,
  * so a dish hovering near the boundary doesn't make it flicker between states.
  */
-function modeFor(kaiju: Kaiju, cfg: KaijuConfig, food: number, home: number): KaijuMode {
+function modeFor(kaiju: Kaiju, cfg: KaijuConfig, food: number, stop: number): KaijuMode {
   if (kaiju.devouring) return 'devour';
 
   const held = kaiju.mode;
@@ -60,7 +78,7 @@ function modeFor(kaiju: Kaiju, cfg: KaijuConfig, food: number, home: number): Ka
       return food < lunge ? 'lunge' : 'chase';
     }
   }
-  return home < cfg.loiterRadius * 1.08 ? 'loiter' : 'hunt';
+  return stop < cfg.loiterRadius * 1.08 ? 'loiter' : 'hunt';
 }
 
 /** Rope-follow: each link is dragged along to keep its spacing from the last. */
@@ -96,9 +114,11 @@ export function stepKaiju(
   const was = kaiju.mode;
   const wasImpatient = kaiju.grumbled;
 
-  const toHome = Math.hypot(h.x - kaiju.x, h.y - kaiju.y);
+  const dest = currentStop(kaiju);
+  const dp = planetPos(dest, t);
+  const toStop = Math.hypot(dp.x - kaiju.x, dp.y - kaiju.y);
   const toFood = pod ? Math.hypot(pod.x - kaiju.x, pod.y - kaiju.y) : Infinity;
-  const mode = modeFor(kaiju, cfg, toFood, toHome);
+  const mode = modeFor(kaiju, cfg, toFood, toStop);
   kaiju.mode = mode;
 
   let tx: number, ty: number, speed: number, weave: number;
@@ -111,14 +131,15 @@ export function stepKaiju(
   } else if (mode === 'loiter') {
     // Aim at a point a little further round the ring than where it is now.
     // Circling falls out of that, and the radius self-corrects.
-    const a = Math.atan2(kaiju.y - h.y, kaiju.x - h.x) + cfg.loiterLead;
-    tx = h.x + Math.cos(a) * cfg.loiterRadius;
-    ty = h.y + Math.sin(a) * cfg.loiterRadius;
+    const a = Math.atan2(kaiju.y - dp.y, kaiju.x - dp.x) + cfg.loiterLead;
+    tx = dp.x + Math.cos(a) * cfg.loiterRadius;
+    ty = dp.y + Math.sin(a) * cfg.loiterRadius;
     speed = cfg.loiterSpeed;
     weave = cfg.slitherAmp;
   } else {
-    tx = h.x;
-    ty = h.y;
+    // Travelling to the next world on the tour, or charging the last one.
+    tx = dp.x;
+    ty = dp.y;
     speed = mode === 'devour' ? cfg.devourSpeed : kaiju.speed;
     weave = mode === 'devour' ? cfg.slitherChase : cfg.slitherAmp;
   }
@@ -135,17 +156,34 @@ export function stepKaiju(
   // Patience only burns while it is waiting. Food is a distraction, and a
   // distracted kaiju is not counting down.
   let committed = false;
+  let loitered = false;
+  let movedOn = false;
   if (mode === 'loiter') {
-    kaiju.arrived = true;
+    if (!kaiju.arrived) {
+      kaiju.arrived = true;
+      loitered = true;
+    }
     kaiju.patience -= dt;
     if (kaiju.patience <= 0) {
-      kaiju.patience = 0;
-      kaiju.devouring = true;
-      kaiju.mode = 'devour';
-      committed = true;
+      if (dest.home) {
+        // Last stop. Nothing left to be polite about.
+        kaiju.patience = 0;
+        kaiju.devouring = true;
+        kaiju.mode = 'devour';
+        committed = true;
+      } else {
+        kaiju.stop = Math.min(kaiju.stop + 1, kaiju.tour.length - 1);
+        kaiju.patience = dwellFor(currentStop(kaiju), cfg);
+        kaiju.patienceMax = kaiju.patience;
+        kaiju.arrived = false;
+        kaiju.grumbled = false;
+        movedOn = true;
+      }
     }
   }
-  if (!kaiju.grumbled && kaiju.arrived && kaiju.patience < cfg.patience * 0.28) {
+  // Only the countdown that actually ends the run is worth grumbling about.
+  if (!kaiju.grumbled && kaiju.arrived && dest.home
+      && kaiju.patience < kaiju.patienceMax * 0.28) {
     kaiju.grumbled = true;
   }
 
@@ -158,15 +196,19 @@ export function stepKaiju(
 
   kaiju.rage = Math.max(0, kaiju.rage - 0.012);
   kaiju.chew = Math.max(0, kaiju.chew - 0.03);
-  kaiju.distance = Math.hypot(h.x - kaiju.x, h.y - kaiju.y);
+  // Reported as the distance to whatever it is currently heading for, which is
+  // what the clock in the HUD is counting down.
+  kaiju.distance = Math.hypot(dp.x - kaiju.x, dp.y - kaiju.y);
 
   return {
     // Only a committed kaiju actually eats the planet; a chase that happens to
     // sweep past Earth is not the end of the run.
-    reachedHome: kaiju.mode === 'devour' && kaiju.distance < home.radius + 28,
+    reachedHome: kaiju.mode === 'devour'
+      && Math.hypot(h.x - kaiju.x, h.y - kaiju.y) < home.radius + 28,
     spotted: (was === 'hunt' || was === 'loiter') && (mode === 'chase' || mode === 'lunge'),
     lunged: was !== 'lunge' && mode === 'lunge',
-    loitered: was !== 'loiter' && mode === 'loiter' && !kaiju.devouring,
+    loitered,
+    movedOn,
     impatient: !wasImpatient && kaiju.grumbled,
     committed,
   };
@@ -197,14 +239,17 @@ export function kaijuClock(
       urgent: true,
     };
   }
+  const dest = currentStop(kaiju);
   if (!kaiju.arrived) {
     const travel = Math.max(0, kaiju.distance - cfg.loiterRadius) / kaiju.speed;
-    return { label: 'Kaiju ETA', seconds: wallClock(travel), urgent: false };
+    return { label: `To ${dest.name}`, seconds: wallClock(travel), urgent: false };
   }
   return {
-    label: 'Patience',
+    // At the last stop the countdown is the run itself, so it gets the
+    // sharper word — and the pulse.
+    label: dest.home ? 'Patience' : `At ${dest.name}`,
     seconds: wallClock(kaiju.patience),
-    urgent: kaiju.patience < cfg.patience * 0.28,
+    urgent: dest.home === true && kaiju.patience < kaiju.patienceMax * 0.28,
   };
 }
 

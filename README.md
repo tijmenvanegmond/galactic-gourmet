@@ -24,6 +24,25 @@ Then open the address Vite prints (`http://localhost:5173` by default).
 | `npm run build` | typecheck, then bundle to `dist/` |
 | `npm run preview` | serve the built `dist/` |
 | `npm run typecheck` | `tsc --noEmit` on its own |
+| `npm run deploy` | build and publish `dist/` to `gh-pages` by hand |
+
+## Deploying
+
+Live at **https://tijmenvanegmond.github.io/galactic-gourmet/**, served from the
+`gh-pages` branch, which holds nothing but the built site.
+
+Pushing to `main` builds and republishes it via
+`.github/workflows/deploy.yml`, so what is live tracks `main` rather than
+whoever last ran the deploy script. The workflow force-pushes a single-commit
+`gh-pages`; that branch is disposable build output, so it has no history worth
+keeping. `npm run deploy` still works as a manual escape hatch, but it
+publishes your working tree — CI is the one that publishes `main`.
+
+Two details make the subpath work. `base: './'` emits relative asset URLs, so
+the same bundle runs from a domain root or from `/galactic-gourmet/` with no
+rewriting. And a small build plugin emits `.nojekyll`, without which Pages runs
+Jekyll over the output and silently drops any path beginning with an
+underscore.
 
 ## Controls
 
@@ -118,6 +137,34 @@ The planet you just left is suppressed (gravity *and* hull) until the pod
 clears `PHYSICS.clearance`, which is the same rule that lets a launch escape
 Earth. That is one field on the payload, `ignore`, and it replaced the old
 home-only special case.
+
+## The diner
+
+It has a name (`voice.ts` rolls one per run — "Abaddon the Medium-Rare
+Enjoyer"), it goes on the ticket, and it talks. Barks fire on state
+transitions, so a quiet one is dropped rather than allowed to stomp the line
+before it; verdicts and endings force their way in.
+
+It does not fly at Earth and end the run. It **tours the system**: every world
+in turn, outermost first, with home saved for last. At each stop it settles
+onto a ring and prowls (`visitTime`), then gives up and moves on. Only at the
+last stop does the countdown mean anything — that one is `patience`, and when
+it expires the kaiju charges. Feeding it something good buys patience;
+insulting it costs patience *and* makes it permanently faster.
+
+So the kaiju is somewhere specific at any moment, and you have to deliver to
+where it actually is. The HUD clock says which: `To Mars`, `At Mars`,
+`Patience`, `Incoming`.
+
+Food inside `senseRadius` interrupts all of that — it abandons the world it
+was visiting and hunts the dish, tightening its weave to a straight strike
+inside `lungeRadius` and reaching further mid-lunge. It cannot be distracted
+once it has committed to Earth. Thresholds widen by `loseInterest` while a
+lock is held so a dish hovering at the boundary doesn't make it flicker.
+
+Chase and lunge are absolute speeds, not multiples of the cruise: they have to
+beat a planet's orbital motion (~1.3 units/sim-second) or a dish parked in a
+capture orbit could never be caught at all.
 
 ## Art and feel
 

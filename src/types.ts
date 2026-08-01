@@ -83,10 +83,13 @@ export interface KaijuConfig {
   /** How far ahead on the ring it aims, which is what makes it circle. */
   loiterLead: number;
   /**
-   * Sim-seconds of patience while loitering. Divide by 60·dt for wall-clock.
-   * At the default dt of 0.40 that is 900 / 24 ≈ 37 seconds.
+   * Sim-seconds it will wait at the home planet — the last stop — before it
+   * gives up and eats the place. Divide by 60·dt for wall-clock: at the
+   * default dt of 0.40 that is 900 / 24 ≈ 37 seconds.
    */
   patience: number;
+  /** Sim-seconds it spends prowling each of the other worlds on its tour. */
+  visitTime: number;
   patienceServe: number;
   patienceReject: number;
   /** Body links trailing the head. */
@@ -175,9 +178,15 @@ export interface Kaiju {
   segments: Vec2[];
   /** Phase of the lateral weave. */
   phase: number;
-  /** Sim-seconds left before it stops waiting and goes for the planet. */
+  /** Worlds it means to visit, in order, with home saved for last. */
+  tour: Planet[];
+  /** Index into `tour` of the world it is at or heading for. */
+  stop: number;
+  /** Sim-seconds left at the current stop. */
   patience: number;
-  /** Has it reached the prowling ring at least once. */
+  /** What `patience` started at here, so "nearly out" is a fixed fraction. */
+  patienceMax: number;
+  /** Has it reached the current stop's prowling ring. */
   arrived: boolean;
   /** Once true it is committed to Earth and food no longer distracts it. */
   devouring: boolean;
@@ -190,8 +199,10 @@ export interface KaijuStep {
   reachedHome: boolean;
   spotted: boolean;
   lunged: boolean;
-  /** Just settled into the prowling ring. */
+  /** Just settled into the current stop's prowling ring. */
   loitered: boolean;
+  /** Just gave up on this world and set off for the next one. */
+  movedOn: boolean;
   /** Patience just crossed the low-water mark. */
   impatient: boolean;
   /** Patience just ran out. */

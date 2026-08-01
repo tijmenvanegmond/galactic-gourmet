@@ -1,0 +1,48 @@
+name: Deploy to GitHub Pages
+
+# Builds on every push to main and republishes the gh-pages branch, so what is
+# live always matches main rather than whatever happened to be in someone's
+# working tree when they ran `npm run deploy`.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+# Never let two deploys race for the branch; the newest push wins.
+concurrency:
+  group: gh-pages-deploy
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      # `build` is tsc --noEmit && vite build, so a type error fails the deploy
+      # rather than shipping.
+      - run: npm run build
+
+      - name: Publish dist to gh-pages
+        env:
+          SHA: ${{ github.sha }}
+        run: |
+          cd dist
+          git init -q -b gh-pages
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -q -m "Deploy ${SHA::7}"
+          git push -f \
+            "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" \
+            gh-pages

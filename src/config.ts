@@ -135,7 +135,10 @@ export const SOL: Level = {
   payloads: 5,
   hunger: 100,
   kaiju: {
-    speed: 0.20,           // patient cruise toward the planet — the doom clock
+    // Cruise between worlds. It has a whole system to get through, so this is
+    // a travel speed rather than the old creep — a hop between neighbouring
+    // orbits lands around fifteen seconds of wall clock.
+    speed: 1.40,
     spawnRadius: 1300,
     spawnAngleOffset: 0.6,
     captureRadius: 34,
@@ -143,11 +146,11 @@ export const SOL: Level = {
     // Hunting. Chase and lunge are absolute speeds rather than multiples of
     // the cruise, because they have to beat a planet's orbital motion (~1.3
     // units/sim-second) or a parked dish could never be caught.
-    senseRadius: 300,
+    senseRadius: 600,
     loseInterest: 1.35,
-    lungeRadius: 120,
-    chaseSpeed: 1.50,
-    lungeSpeed: 3.60,
+    lungeRadius: 170,
+    chaseSpeed: 2.20,
+    lungeSpeed: 4.60,
     grabReach: 18,
     // It does not dive straight at the planet. It pulls up at this ring and
     // prowls, which is the window you actually get to cook in — and it is
@@ -156,12 +159,13 @@ export const SOL: Level = {
     // Must beat Earth's own orbital motion (~1.3 units/sim-second) or it could
     // never hold station once it arrived — the ring would slide out from under
     // it every lap.
-    loiterSpeed: 1.80,
+    loiterSpeed: 2.20,
     loiterLead: 0.30,
-    // Once it stops waiting it charges. The slow cruise is for crossing deep
+    // Once it stops waiting it charges. The cruise is for crossing deep
     // space, not for the last two hundred units.
-    devourSpeed: 2.40,
-    patience: 900,        // sim-seconds; ≈37s of wall clock at dt 0.40
+    devourSpeed: 3.20,
+    patience: 900,        // sim-seconds at Earth; ≈37s of wall clock at dt 0.40
+    visitTime: 360,       // ≈15s of prowling at each of the other worlds
     patienceServe: 260,   // a dish it likes buys you this much more
     patienceReject: 220,  // an insult costs this much, on top of the speed-up
     // Serpent body.

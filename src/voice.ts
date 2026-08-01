@@ -38,8 +38,8 @@ const EPITHETS = [
 ];
 
 export type BarkEvent =
-  | 'arrive' | 'loiter' | 'spot' | 'lunge' | 'perfect' | 'good' | 'reject'
-  | 'impatient' | 'devour' | 'win' | 'lose';
+  | 'arrive' | 'visit' | 'movedOn' | 'loiter' | 'spot' | 'lunge'
+  | 'perfect' | 'good' | 'reject' | 'impatient' | 'devour' | 'win' | 'lose';
 
 const LINES: Record<BarkEvent, string[]> = {
   arrive: [
@@ -49,6 +49,21 @@ const LINES: Record<BarkEvent, string[]> = {
     "I'm not angry, I'm hungry. On me those look identical.",
     'Do you know how far the nearest decent planet is? Very.',
     'I have been chewing rocks for a month. Rocks.',
+  ],
+  visit: [
+    'Next course. What have we got.',
+    'I always try the local speciality. Where is it.',
+    'Nobody has greeted me. I have been here four seconds.',
+    'Ooh, a little one. Is it a tasting portion?',
+    'I am going to be honest, this one looks like gravel.',
+    'Right, doing a lap. Purely to build an appetite.',
+  ],
+  movedOn: [
+    'Nothing here. Moving on. Disappointed but moving on.',
+    "I'll be writing about this in the review.",
+    'Next.',
+    'Not one waiter. Not ONE.',
+    'Kitchen closed, apparently. Fine.',
   ],
   loiter: [
     "Right, I'm here. I'll wait. I am famously patient.",
