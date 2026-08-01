@@ -15,18 +15,36 @@ export function currentStop(kaiju: Kaiju): Planet {
   return kaiju.tour[kaiju.stop];
 }
 
+/** Draws `count` distinct worlds from the candidates, order unspecified. */
+function drawStops(candidates: Planet[], count: number): Planet[] {
+  const pool = [...candidates];
+  const picked: Planet[] = [];
+  while (picked.length < count && pool.length) {
+    picked.push(...pool.splice(Math.floor(Math.random() * pool.length), 1));
+  }
+  return picked;
+}
+
 export function createKaiju(level: Level, home: Planet, t: number): Kaiju {
   const cfg = level.kaiju;
-  const h = planetPos(home, t);
-  const angle = Math.atan2(h.y, h.x) + cfg.spawnAngleOffset;
-  const x = Math.cos(angle) * cfg.spawnRadius;
-  const y = Math.sin(angle) * cfg.spawnRadius;
-  const heading = Math.atan2(h.y - y, h.x - x);
 
-  // It works its way inward through the system and saves home for last, which
-  // is both the sensible approach from deep space and the better joke.
-  const tour = level.planets.filter(p => !p.home).sort((a, b) => b.orbit - a.orbit);
+  // A different few worlds each run, worked through inward, with home saved
+  // for last — which is both the sensible approach from deep space and the
+  // better joke. Moons are too small to be worth a stop.
+  const candidates = level.planets.filter(p => !p.home && !p.parent);
+  const tour = drawStops(candidates, cfg.tourStops).sort((a, b) => b.orbit - a.orbit);
   tour.push(home);
+
+  // Arrive just outside the first stop — off its own bearing, not the home
+  // planet's. Taking the angle from anywhere else can put the spawn on the far
+  // side of the system and turn the opening leg into a crossing.
+  const first = tour[0];
+  const fp = planetPos(first, t);
+  const angle = Math.atan2(fp.y, fp.x) + cfg.spawnAngleOffset;
+  const spawnRadius = Math.hypot(fp.x, fp.y) + cfg.spawnMargin;
+  const x = Math.cos(angle) * spawnRadius;
+  const y = Math.sin(angle) * spawnRadius;
+  const heading = Math.atan2(fp.y - y, fp.x - x);
 
   // Laid out behind the head so it arrives already stretched out rather than
   // unfurling from a single point.
@@ -42,7 +60,7 @@ export function createKaiju(level: Level, home: Planet, t: number): Kaiju {
     x, y,
     speed: cfg.speed,
     mouth: 0,
-    distance: cfg.spawnRadius,
+    distance: spawnRadius,
     rage: 0,
     chew: 0,
     name: rollName(),

@@ -51,9 +51,10 @@ export function predict(
       points.push({ x, y, terminal: true });
       break;
     }
-    // Not a wreck any more — this is where the pod gets parked.
+    // Where the pod gets parked — unless the thing it meets is a gas giant,
+    // which is still very much a wreck.
     if (g.hit) {
-      points.push({ x, y, capture: true });
+      points.push(g.hit.gas ? { x, y, terminal: true } : { x, y, capture: true });
       break;
     }
     if (Math.hypot(x, y) > PHYSICS.worldBoundary) break;

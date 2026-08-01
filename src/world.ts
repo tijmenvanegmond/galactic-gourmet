@@ -9,15 +9,21 @@ export interface GravitySample {
 }
 
 // Planet orbits are kinematic: they are placed on rails rather than integrated.
-// See README "Known simplification" for what that costs.
+// See README "Known simplification" for what that costs. A moon rides its
+// parent's rail and turns on its own, so both are one level of recursion.
 export function planetPos(p: Planet, t: number): Vec2 {
   const a = p.a0 + p.w * t;
-  return { x: SUN.x + Math.cos(a) * p.orbit, y: SUN.y + Math.sin(a) * p.orbit };
+  const c = p.parent ? planetPos(p.parent, t) : SUN;
+  return { x: c.x + Math.cos(a) * p.orbit, y: c.y + Math.sin(a) * p.orbit };
 }
 
 export function planetVel(p: Planet, t: number): Vec2 {
   const a = p.a0 + p.w * t;
-  return { x: -Math.sin(a) * p.orbit * p.w, y: Math.cos(a) * p.orbit * p.w };
+  const base = p.parent ? planetVel(p.parent, t) : { x: 0, y: 0 };
+  return {
+    x: base.x - Math.sin(a) * p.orbit * p.w,
+    y: base.y + Math.cos(a) * p.orbit * p.w,
+  };
 }
 
 /**

@@ -169,6 +169,10 @@ export function stepPayload(
 
   if (g.sunDist < SUN.radius) return { kind: 'lost', reason: LOST_TO_STAR };
   if (g.hit) {
+    // A gas giant has no surface to park on — it just swallows the dish.
+    if (g.hit.gas) {
+      return { kind: 'lost', reason: `crushed in ${g.hit.name}'s atmosphere` };
+    }
     capture(pod, g.hit, t);
     return { kind: 'captured', planet: g.hit };
   }

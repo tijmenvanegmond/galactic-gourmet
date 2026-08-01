@@ -3,7 +3,7 @@
 // Everything adjustable lives here. No numbers in the logic files.
 // ---------------------------------------------------------------------------
 
-import type { Band, BandLabel, Level, Spice, SpiceName, Stage } from './types';
+import type { Band, BandLabel, Level, Planet, Spice, SpiceName, Stage } from './types';
 
 export const SIM = {
   // Seconds of simulation advanced per rendered frame, in arbitrary sim units.
@@ -47,7 +47,7 @@ export const SUN = {
 export const PHYSICS = {
   planetSoft: 2200,     // softening for planet wells
   clearance: 46,        // pod ignores a just-left planet inside this margin
-  worldBoundary: 1750,  // past this the payload is lost to deep space
+  worldBoundary: 2400,  // past this the payload is lost to deep space
 };
 
 export const LAUNCH = {
@@ -135,14 +135,37 @@ export const STAGES: Stage[] = [
 ];
 
 // --- level 1: Sol -----------------------------------------------------------
+// Declared as bindings rather than inline so moons can point at their parent.
+// structuredClone preserves those references when the level is copied.
+
+const MERCURY: Planet = { name: 'Mercury', orbit: 175, a0: 0.6, w: 0.0075, radius: 11, gm: 260, fill: '#B4B2A9', edge: '#5F5E5A', style: 'rocky', spice: 'peppercorn' };
+const VENUS: Planet   = { name: 'Venus',   orbit: 295, a0: 2.4, w: -0.0044, radius: 17, gm: 620, fill: '#FAC775', edge: '#854F0B', style: 'banded', spice: 'paprika' };
+const EARTH: Planet   = { name: 'Earth',   orbit: 435, a0: 3.9, w: 0.0029, radius: 19, gm: 700, fill: '#85B7EB', edge: '#0C447C', style: 'terran', home: true };
+const MARS: Planet    = { name: 'Mars',    orbit: 600, a0: 1.2, w: 0.0018, radius: 13, gm: 420, fill: '#F0997B', edge: '#712B13', style: 'rocky', spice: 'saffron' };
+
+// The giants are deep wells and nothing to land on. They bend a shot hard
+// enough to be worth aiming at, and swallow one that arrives.
+const JUPITER: Planet = { name: 'Jupiter', orbit: 880,  a0: 5.1, w: 0.00090, radius: 46, gm: 3000, fill: '#D9A066', edge: '#7A4B22', style: 'giant', gas: true };
+const SATURN: Planet  = { name: 'Saturn',  orbit: 1150, a0: 2.0, w: 0.00062, radius: 38, gm: 2300, fill: '#E3C68A', edge: '#8A6B36', style: 'giant', gas: true, rings: true };
+const URANUS: Planet  = { name: 'Uranus',  orbit: 1400, a0: 3.4, w: 0.00042, radius: 26, gm: 1200, fill: '#A6E0DF', edge: '#2F6E70', style: 'ice', gas: true };
+const NEPTUNE: Planet = { name: 'Neptune', orbit: 1620, a0: 0.9, w: 0.00031, radius: 25, gm: 1300, fill: '#7C9BE6', edge: '#22346E', style: 'ice', gas: true };
+
+// Moons are the only solid ground out there, which is what makes the outer
+// system flyable: you cannot park on a giant, but you can park around its moon.
+const IO: Planet     = { name: 'Io',     orbit: 82,  a0: 0.3, w: 0.030, radius: 5.5, gm: 95,  fill: '#E8D26B', edge: '#8A7420', style: 'rocky', parent: JUPITER };
+const EUROPA: Planet = { name: 'Europa', orbit: 120, a0: 2.6, w: 0.021, radius: 5,   gm: 80,  fill: '#DCE6EA', edge: '#6E7E88', style: 'ice',   parent: JUPITER };
+const TITAN: Planet  = { name: 'Titan',  orbit: 94,  a0: 1.4, w: 0.024, radius: 6.5, gm: 115, fill: '#D8A657', edge: '#7A5520', style: 'banded', parent: SATURN };
+const TRITON: Planet = { name: 'Triton', orbit: 68,  a0: 4.2, w: -0.026, radius: 4.5, gm: 70, fill: '#CFE0E8', edge: '#5A737F', style: 'rocky', parent: NEPTUNE };
+
 export const SOL: Level = {
   name: 'Sol',
   spiceRing: 36,
   planets: [
-    { name: 'Mercury', orbit: 175, a0: 0.6, w: 0.0075, radius: 11, gm: 260, fill: '#B4B2A9', edge: '#5F5E5A', style: 'rocky',  spice: 'peppercorn' },
-    { name: 'Venus',   orbit: 295, a0: 2.4, w: -0.0044, radius: 17, gm: 620, fill: '#FAC775', edge: '#854F0B', style: 'banded', spice: 'paprika' },
-    { name: 'Earth',   orbit: 435, a0: 3.9, w: 0.0029, radius: 19, gm: 700, fill: '#85B7EB', edge: '#0C447C', style: 'terran', home: true },
-    { name: 'Mars',    orbit: 600, a0: 1.2, w: 0.0018, radius: 13, gm: 420, fill: '#F0997B', edge: '#712B13', style: 'rocky',  spice: 'saffron' },
+    MERCURY, VENUS, EARTH, MARS,
+    JUPITER, IO, EUROPA,
+    SATURN, TITAN,
+    URANUS,
+    NEPTUNE, TRITON,
   ],
   payloads: 5,
   hunger: 100,
@@ -151,8 +174,16 @@ export const SOL: Level = {
     // a travel speed rather than the old creep — a hop between neighbouring
     // orbits lands around fifteen seconds of wall clock.
     speed: 1.40,
-    spawnRadius: 1300,
-    spawnAngleOffset: 0.6,
+    // How many worlds it works through before Earth. Every planet is a
+    // candidate, but touring all eight would outlast the five dishes you get
+    // to answer with, so each run draws a different few.
+    tourStops: 3,
+    // It arrives just outside the first stop rather than at a fixed radius, so
+    // the opening leg is the same short hop wherever the tour begins. The
+    // angle is small on purpose: at Neptune's radius even half a radian is a
+    // journey.
+    spawnMargin: 320,
+    spawnAngleOffset: 0.12,
     captureRadius: 34,
     rejectSpeedup: 1.30,   // feeding it something inedible makes it angrier
     // Hunting. Chase and lunge are absolute speeds rather than multiples of

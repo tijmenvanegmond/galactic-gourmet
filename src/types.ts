@@ -39,10 +39,11 @@ export interface Stage {
 }
 
 /** Surface treatment the sprite baker uses to give each world a face. */
-export type PlanetStyle = 'rocky' | 'banded' | 'terran';
+export type PlanetStyle = 'rocky' | 'banded' | 'terran' | 'giant' | 'ice';
 
 export interface Planet {
   name: string;
+  /** Radius of its own orbit — around the sun, or around `parent` if set. */
   orbit: number;
   a0: number;
   w: number;
@@ -51,6 +52,14 @@ export interface Planet {
   fill: string;
   edge: string;
   style: PlanetStyle;
+  /**
+   * Set for moons: they ride their parent's rail and orbit it. Held as a
+   * reference rather than a name, which structuredClone preserves.
+   */
+  parent?: Planet;
+  /** No surface to land on. Hitting one loses the dish instead of parking it. */
+  gas?: boolean;
+  rings?: boolean;
   spice?: SpiceName;
   home?: boolean;
 }
@@ -60,7 +69,10 @@ export type SpicedPlanet = Planet & { spice: SpiceName };
 
 export interface KaijuConfig {
   speed: number;
-  spawnRadius: number;
+  /** Worlds it visits before turning on the home planet. */
+  tourStops: number;
+  /** How far outside the first stop's orbit it arrives. */
+  spawnMargin: number;
   spawnAngleOffset: number;
   captureRadius: number;
   rejectSpeedup: number;

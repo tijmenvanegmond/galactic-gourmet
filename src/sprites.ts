@@ -128,6 +128,47 @@ function bandedFace(c: Ctx, r: number, fill: string, rand: () => number): void {
   c.rotate(0.35);
 }
 
+function giantFace(c: Ctx, r: number, fill: string, edge: string, rand: () => number): void {
+  c.rotate(-0.18);
+  // Many more, thinner bands than a rocky world's haze, plus a storm.
+  for (let i = -5; i <= 5; i++) {
+    const y = (i / 5.6) * r;
+    const h = r * (0.06 + rand() * 0.07);
+    const tone = i % 2 === 0 ? shade(fill, 0.82) : shade(fill, 1.12);
+    c.fillStyle = rgba(tone, 0.6);
+    c.beginPath();
+    c.ellipse(0, y, r * Math.sqrt(Math.max(0.05, 1 - (y / r) ** 2)) * 1.02, h, 0, 0, Math.PI * 2);
+    c.fill();
+  }
+  c.fillStyle = rgba(edge, 0.45);
+  c.beginPath();
+  c.ellipse(-r * 0.28, r * 0.24, r * 0.26, r * 0.13, 0.1, 0, Math.PI * 2);
+  c.fill();
+  c.fillStyle = 'rgba(255,255,255,0.16)';
+  c.beginPath();
+  c.ellipse(-r * 0.30, r * 0.22, r * 0.15, r * 0.07, 0.1, 0, Math.PI * 2);
+  c.fill();
+  c.rotate(0.18);
+}
+
+function iceFace(c: Ctx, r: number, fill: string, rand: () => number): void {
+  c.rotate(-0.10);
+  for (let i = -2; i <= 2; i++) {
+    const y = (i / 2.8) * r;
+    c.fillStyle = rgba(shade(fill, i % 2 === 0 ? 0.9 : 1.08), 0.35);
+    c.beginPath();
+    c.ellipse(0, y, r * 0.98, r * (0.10 + rand() * 0.06), 0, 0, Math.PI * 2);
+    c.fill();
+  }
+  c.rotate(0.10);
+  // a cold, bright limb
+  c.strokeStyle = 'rgba(255,255,255,0.30)';
+  c.lineWidth = Math.max(0.7, r * 0.07);
+  c.beginPath();
+  c.arc(0, 0, r * 0.9, 0, Math.PI * 2);
+  c.stroke();
+}
+
 function terranFace(c: Ctx, r: number, edge: string, rand: () => number): void {
   c.fillStyle = rgba(edge, 0.62);
   for (let i = 0; i < 4; i++) {
@@ -176,6 +217,8 @@ function makePlanet(p: Planet): Sprite {
 
     if (p.style === 'rocky') rockyFace(c, r, p.fill, rand);
     else if (p.style === 'banded') bandedFace(c, r, p.fill, rand);
+    else if (p.style === 'giant') giantFace(c, r, p.fill, p.edge, rand);
+    else if (p.style === 'ice') iceFace(c, r, p.fill, rand);
     else terranFace(c, r, p.edge, rand);
 
     // day/night terminator

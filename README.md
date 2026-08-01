@@ -139,6 +139,26 @@ clears `PHYSICS.clearance`, which is the same rule that lets a launch escape
 Earth. That is one field on the payload, `ignore`, and it replaced the old
 home-only special case.
 
+## The outer system
+
+Eight planets and four moons. Past Mars the star's oven no longer reaches, so
+nothing out there cooks — the outer system is a fridge you cross, not a place
+you brown a dish.
+
+**The giants have no surface.** Jupiter, Saturn, Uranus and Neptune are flagged
+`gas`, and hitting one loses the dish rather than parking it — the aim preview
+marks them with a terminal cross instead of a capture ring, and each wears a
+dashed hazard collar so you can see it before you learn it the hard way. What
+they are good for is their wells: Jupiter pulls about two and a half times as
+hard at the surface as Earth does, which bends a shot usefully.
+
+**Moons are the only solid ground out there**, and that is the point — you
+cannot park on a giant, but you can park around its moon and keep going. A moon
+is just a planet with a `parent`, so `planetPos` and `planetVel` recurse one
+level: it rides its parent's rail and turns on its own, and a relaunch from one
+inherits both motions. Everything else — gravity, capture, sprites, the minimap
+— needed no special case.
+
 ## The diner
 
 It has a name (`voice.ts` rolls one per run — "Abaddon the Medium-Rare
@@ -146,12 +166,18 @@ Enjoyer"), it goes on the ticket, and it talks. Barks fire on state
 transitions, so a quiet one is dropped rather than allowed to stomp the line
 before it; verdicts and endings force their way in.
 
-It does not fly at Earth and end the run. It **tours the system**: every world
-in turn, outermost first, with home saved for last. At each stop it settles
-onto a ring and prowls (`visitTime`), then gives up and moves on. Only at the
-last stop does the countdown mean anything — that one is `patience`, and when
-it expires the kaiju charges. Feeding it something good buys patience;
-insulting it costs patience *and* makes it permanently faster.
+It does not fly at Earth and end the run. It **tours the system**: `tourStops`
+worlds drawn fresh each run, worked through outermost first, with home saved
+for last. At each stop it settles onto a ring and prowls (`visitTime`), then
+gives up and moves on. Only at the last stop does the countdown mean anything —
+that one is `patience`, and when it expires the kaiju charges. Feeding it
+something good buys patience; insulting it costs patience *and* makes it
+permanently faster.
+
+It draws a few worlds rather than visiting all eight because eight stops
+outlast the five dishes you get to answer with, which leaves the clock
+irrelevant. It spawns just outside whichever world it drew first, on that
+world's own bearing, so the opening leg is a short hop instead of a crossing.
 
 So the kaiju is somewhere specific at any moment, and you have to deliver to
 where it actually is. The HUD clock says which: `To Mars`, `At Mars`,

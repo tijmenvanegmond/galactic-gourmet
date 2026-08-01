@@ -70,11 +70,13 @@ function drawStar(ctx: Ctx, cam: Camera, t: number): void {
   drawSprite(ctx, starSprite(), s.x, s.y, z * pulse, t * 0.002);
 }
 
-function drawOrbits(ctx: Ctx, cam: Camera, planets: Planet[]): void {
-  const s = toScreen(cam, SUN.x, SUN.y);
+function drawOrbits(ctx: Ctx, cam: Camera, planets: Planet[], t: number): void {
   ctx.strokeStyle = PALETTE.orbitLine;
   ctx.setLineDash([2, 7]);
   for (const p of planets) {
+    // A moon's rail circles its parent, not the star.
+    const centre = p.parent ? planetPos(p.parent, t) : { x: SUN.x, y: SUN.y };
+    const s = toScreen(cam, centre.x, centre.y);
     ctx.beginPath(); ctx.arc(s.x, s.y, p.orbit * cam.zoom, 0, TAU); ctx.stroke();
   }
   ctx.setLineDash([]);
@@ -108,9 +110,45 @@ function drawPlanets(
       ctx.globalAlpha = 1;
     }
 
+    // Rings sit behind the body. Drawn here rather than baked, so they keep a
+    // fixed tilt instead of spinning with the sprite's sun-facing rotation.
+    if (p.rings) {
+      ctx.save();
+      ctx.translate(s.x, s.y);
+      ctx.rotate(-0.42);
+      ctx.globalAlpha = 0.55;
+      ctx.strokeStyle = p.fill;
+      ctx.lineWidth = Math.max(1.4, p.radius * 0.30 * z);
+      ctx.beginPath();
+      ctx.ellipse(0, 0, p.radius * 1.95 * z, p.radius * 0.52 * z, 0, 0, TAU);
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+      ctx.strokeStyle = 'rgba(18,19,15,0.55)';
+      ctx.lineWidth = Math.max(0.6, p.radius * 0.07 * z);
+      ctx.beginPath();
+      ctx.ellipse(0, 0, p.radius * 1.72 * z, p.radius * 0.46 * z, 0, 0, TAU);
+      ctx.stroke();
+      ctx.restore();
+    }
+
     // The sprite is lit from +x, so pointing that axis at the star gives each
     // world a terminator that tracks its own orbit.
     drawSprite(ctx, planetSprite(p), s.x, s.y, z, Math.atan2(q.y, q.x) + Math.PI);
+
+    // Nothing to land on: mark the giants so the hazard is visible before you
+    // find out by losing a dish in one.
+    if (p.gas) {
+      ctx.save();
+      ctx.translate(s.x, s.y);
+      ctx.rotate(t * 0.02);
+      ctx.strokeStyle = PALETTE.char;
+      ctx.globalAlpha = 0.38;
+      ctx.setLineDash([5, 7]);
+      ctx.lineWidth = 1.2;
+      ctx.beginPath(); ctx.arc(0, 0, (p.radius + 9) * z, 0, TAU); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.restore();
+    }
 
     if (z > 0.45) {
       ctx.font = '9px ui-monospace, Menlo, monospace';
@@ -492,7 +530,7 @@ export function render(ctx: Ctx, state: GameState): void {
 
   drawStarfield(ctx, cam, t);
   drawStar(ctx, cam, t);
-  drawOrbits(ctx, cam, level.planets);
+  drawOrbits(ctx, cam, level.planets, t);
   drawPlanets(ctx, cam, level.planets, t, level.spiceRing, pod ? pod.rack : []);
 
   for (const g of ghosts) {
