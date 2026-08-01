@@ -13,13 +13,10 @@
       :root {
         --void: #12130f;
         --panel: #1b1d18;
-        --panel-2: #24261f;
         --rule: #35382d;
         --ink: #e8e4d6;
         --ink-dim: #8c8a82;
         --ember: #efa827;
-        --char: #d85a30;
-        --mint: #9fe1cb;
         --mono:
           ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
         --sans: "Helvetica Neue", Inter, system-ui, sans-serif;
@@ -48,44 +45,6 @@
         border: 1px solid var(--rule);
         touch-action: none;
         cursor: crosshair;
-      }
-
-      .controls {
-        display: flex;
-        gap: 6px;
-        margin-top: 12px;
-        flex-wrap: wrap;
-      }
-      button {
-        font-family: var(--mono);
-        font-size: 11px;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-        padding: 9px 14px;
-        background: var(--panel-2);
-        color: var(--ink);
-        border: 1px solid var(--rule);
-        cursor: pointer;
-      }
-      button:hover {
-        border-color: var(--ember);
-        color: var(--ember);
-      }
-      button:focus-visible {
-        outline: 2px solid var(--mint);
-        outline-offset: 2px;
-      }
-      #btn-burn {
-        flex: 1;
-      }
-      #btn-burn:hover {
-        border-color: var(--char);
-        color: var(--char);
-      }
-      #btn-mute.off {
-        color: var(--ink-dim);
-        border-color: var(--rule);
-        opacity: 0.7;
       }
 
       .speed {
@@ -141,15 +100,6 @@
 
       <p id="status">Drag back from Earth and release.</p>
 
-      <div class="controls">
-        <button id="btn-left">&#9664; Steer</button>
-        <button id="btn-burn">Burn</button>
-        <button id="btn-right">Steer &#9654;</button>
-        <button id="btn-stage">Drop stage</button>
-        <button id="btn-restart">Restart</button>
-        <button id="btn-mute">Sound on</button>
-      </div>
-
       <div class="speed">
         <label for="speed">Sim speed</label>
         <input type="range" id="speed" />
@@ -161,6 +111,7 @@
         &nbsp;·&nbsp; <b>&#8592; &#8594; / A D</b> steer &nbsp;·&nbsp;
         <b>S</b> drop stage &nbsp;·&nbsp; <b>R</b> restart &nbsp;·&nbsp;
         <b>M</b> mute<br />
+        Keyboard and mouse only — the on-screen buttons are gone.<br />
         Hit a planet and the dish is caught in orbit — it keeps cooking there,
         so drag again to relaunch it. Free, but the kaiju is still coming.
       </div>

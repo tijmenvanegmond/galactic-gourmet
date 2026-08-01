@@ -54,7 +54,7 @@ underscore.
 | ← → or A D | steer |
 | S | drop the live stage and arm the next |
 | R | restart |
-| M | mute |
+| M | mute (no button any more — keyboard only) |
 | sim speed slider | global time scale, live |
 
 ## Layout

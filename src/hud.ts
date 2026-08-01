@@ -18,7 +18,6 @@ export const dom = {
   status: el('status'),
   speed: el<HTMLInputElement>('speed'),
   speedLabel: el('speed-label'),
-  mute: el<HTMLButtonElement>('btn-mute'),
 };
 
 const setText = (node: HTMLElement | null, value: string): void => {
@@ -27,15 +26,6 @@ const setText = (node: HTMLElement | null, value: string): void => {
 
 export function setStatus(text: string): void {
   setText(dom.status, text);
-}
-
-export function setMuted(muted: boolean): void {
-  setText(dom.mute, muted ? 'Sound off' : 'Sound on');
-  dom.mute?.classList.toggle('off', muted);
-}
-
-export function bindMute(onToggle: () => boolean): void {
-  dom.mute?.addEventListener('click', () => setMuted(onToggle()));
 }
 
 export function bindSpeed(onChange?: () => void): void {

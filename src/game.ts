@@ -526,12 +526,10 @@ export function startGame(canvas: HTMLCanvasElement): void {
       }
     },
     onRestart: reset,
-    onMute() { hud.setMuted(audio.toggleMute()); },
+    onMute() { audio.toggleMute(); },
   });
 
   hud.bindSpeed();
-  hud.bindMute(audio.toggleMute);
-  hud.setMuted(audio.isMuted());
   reset();
   frame();
 }

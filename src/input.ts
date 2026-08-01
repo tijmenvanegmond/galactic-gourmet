@@ -55,17 +55,4 @@ export function attachInput(
     if (['arrowleft', 'arrowright', 'a', 'd'].includes(k)) input.steer = 0;
   });
 
-  const hold = (id: string, down: () => void, up: () => void): void => {
-    const el = document.getElementById(id);
-    if (!el) return;
-    el.addEventListener('pointerdown', e => { e.preventDefault(); down(); });
-    (['pointerup', 'pointerleave', 'pointercancel'] as const)
-      .forEach(evt => el.addEventListener(evt, up));
-  };
-
-  hold('btn-left', () => { input.steer = -1; }, () => { input.steer = 0; });
-  hold('btn-right', () => { input.steer = 1; }, () => { input.steer = 0; });
-  hold('btn-burn', () => { input.thrust = true; }, () => { input.thrust = false; });
-  document.getElementById('btn-stage')?.addEventListener('click', handlers.onStage);
-  document.getElementById('btn-restart')?.addEventListener('click', handlers.onRestart);
 }

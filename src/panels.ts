@@ -7,6 +7,7 @@
 import { VIEW, PANELS, PALETTE, PHYSICS, SPICES, STAGES } from './config';
 import { planetPos, bandFor, bandByLabel } from './world';
 import { kaijuClock } from './kaiju';
+import { isMuted } from './audio';
 import { drawSprite, kaijuHeadSprite, dishSprite, pipSprite } from './sprites';
 import type { GameState, SpiceName } from './types';
 
@@ -262,6 +263,12 @@ function drawConsole(ctx: Ctx, state: GameState): void {
       ctx.arc(dx, y + 32, 7, 0, TAU);
       ctx.stroke();
     }
+  }
+
+  // The mute preference survives a reload, so with no button on the page it
+  // has to say so in here or a returning player just gets silence.
+  if (isMuted()) {
+    label(ctx, 'SOUND OFF · PRESS M', 12, y + 62, { size: 7, spacing: 0.5, alpha: 0.5 });
   }
 
   label(ctx, 'SCORE', cx, y + 60, { size: 8, spacing: 1.4, alpha: 0.7 });
