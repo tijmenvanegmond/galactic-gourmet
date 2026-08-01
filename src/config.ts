@@ -15,7 +15,18 @@ export const SIM = {
 
 export const VIEW = {
   width: 640,
-  height: 430,
+  // Taller than the old 430: the bottom strip is the kitchen console now, so
+  // the playfield keeps roughly the room it had before the HUD moved in.
+  height: 480,
+};
+
+/** Screen-space chrome drawn onto the canvas rather than around it. */
+export const PANELS = {
+  consoleHeight: 70,
+  profileWidth: 218,
+  profileHeight: 66,
+  margin: 10,
+  chatterWidth: 300,
 };
 
 export const SUN = {
@@ -190,6 +201,8 @@ export const SCORE = {
 
 // --- palette ----------------------------------------------------------------
 export const PALETTE = {
+  ink: '#E8E4D6',
+  char: '#D85A30',
   sun: '#EFA827',
   sunCore: '#FFF3D0',
   sunGlowOuter: 'rgba(239,168,39,0.06)',

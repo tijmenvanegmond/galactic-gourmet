@@ -279,6 +279,12 @@ export interface Pop extends Vec2 {
   vy: number;
 }
 
+/** The diner's last line, drawn on the canvas and fading as it ages. */
+export interface Chatter {
+  line: string;
+  life: number;
+}
+
 /** Everything that exists purely to make impacts feel like impacts. */
 export interface Juice {
   /** Trauma 0..1; screen offset scales with its square. */
@@ -321,8 +327,11 @@ export interface GameState {
   t: number;
   phase: Phase;
   score: number;
+  /** Score as displayed — rolls up toward `score` so a big serve reads big. */
+  shownScore: number;
   hunger: number;
   payloads: number;
+  chatter: Chatter;
   pod: Payload | null;
   aim: Aim | null;
   dragOffset: Vec2 | null;

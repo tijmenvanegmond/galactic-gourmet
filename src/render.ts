@@ -1,7 +1,8 @@
-import { SUN, VIEW, PALETTE, SPICES, PHYSICS, JUICE, BANDS } from './config';
+import { SUN, VIEW, PALETTE, SPICES, JUICE, BANDS } from './config';
 import { planetPos, bandFor, bandIndex } from './world';
 import { toScreen } from './camera';
 import { shakeTransform } from './juice';
+import { drawPanels } from './panels';
 import {
   drawSprite, planetSprite, starSprite, kaijuHeadSprite, kaijuSegmentSprite,
   dishSprite, pipSprite, SEGMENT_UNIT,
@@ -461,54 +462,6 @@ function drawPrompt(ctx: Ctx, cam: Camera, pod: Payload, t: number): void {
   ctx.globalAlpha = 1;
 }
 
-function drawMinimap(ctx: Ctx, state: GameState): void {
-  const M = 88, mx = VIEW.width - M - 10, my = 10, half = M / 2;
-  const k = half / (PHYSICS.worldBoundary * 0.83);
-  const cx = mx + half, cy = my + half;
-
-  ctx.fillStyle = PALETTE.minimapBg;
-  ctx.strokeStyle = PALETTE.minimapEdge;
-  ctx.lineWidth = 1;
-  ctx.beginPath(); ctx.roundRect(mx, my, M, M, 6); ctx.fill(); ctx.stroke();
-
-  ctx.save();
-  ctx.beginPath(); ctx.roundRect(mx, my, M, M, 6); ctx.clip();
-
-  ctx.fillStyle = PALETTE.sun;
-  ctx.beginPath(); ctx.arc(cx, cy, 3, 0, TAU); ctx.fill();
-
-  for (const p of state.level.planets) {
-    const q = planetPos(p, state.t);
-    ctx.fillStyle = p.fill;
-    ctx.beginPath(); ctx.arc(cx + q.x * k, cy + q.y * k, p.home ? 2.6 : 1.8, 0, TAU); ctx.fill();
-  }
-
-  // the serpent, as a tapering string of dots
-  const segs = state.kaiju.segments;
-  for (let i = segs.length - 1; i >= 0; i--) {
-    ctx.fillStyle = PALETTE.kaijuBody;
-    ctx.globalAlpha = 0.5 + 0.5 * (1 - i / segs.length);
-    ctx.beginPath();
-    ctx.arc(cx + segs[i].x * k, cy + segs[i].y * k, 0.8 + 1.4 * (1 - i / segs.length), 0, TAU);
-    ctx.fill();
-  }
-  ctx.globalAlpha = 1;
-  ctx.fillStyle = state.kaiju.devouring ? PALETTE.kaijuRage : PALETTE.kaijuBody;
-  ctx.beginPath(); ctx.arc(cx + state.kaiju.x * k, cy + state.kaiju.y * k, 3.4, 0, TAU); ctx.fill();
-
-  if (state.pod) {
-    const px = cx + state.pod.x * k, py = cy + state.pod.y * k;
-    ctx.fillStyle = PALETTE.heading;
-    ctx.beginPath(); ctx.arc(px, py, 2, 0, TAU); ctx.fill();
-    if (state.pod.orbit) {
-      ctx.strokeStyle = PALETTE.predictCapture;
-      ctx.lineWidth = 1;
-      ctx.beginPath(); ctx.arc(px, py, 4.5, 0, TAU); ctx.stroke();
-    }
-  }
-  ctx.restore();
-}
-
 function drawVignette(ctx: Ctx): void {
   const g = ctx.createRadialGradient(
     VIEW.width / 2, VIEW.height / 2, VIEW.height * 0.35,
@@ -555,7 +508,7 @@ export function render(ctx: Ctx, state: GameState): void {
   ctx.restore();
 
   drawVignette(ctx);
-  drawMinimap(ctx, state);
+  drawPanels(ctx, state);
 
   if (juice.flash > 0) {
     ctx.globalAlpha = juice.flash * 0.6;

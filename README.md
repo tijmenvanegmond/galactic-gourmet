@@ -72,7 +72,8 @@ src/sprites.ts      offscreen sprite baking — all art is drawn by code
 src/juice.ts        shake, hit-stop, flashes, shockwaves, floating text
 src/audio.ts        synthesised sound; no files, just oscillators and noise
 src/render.ts       all canvas drawing
-src/hud.ts          DOM bindings, kept out of the loop
+src/panels.ts       the HUD, drawn onto the canvas: profile, console, minimap
+src/hud.ts          the little DOM chrome left outside the frame
 src/input.ts        pointer, keyboard, on-screen buttons
 src/game.ts         state machine, scoring, frame loop
 src/main.ts         entry point — grabs the canvas, starts the game
@@ -165,6 +166,23 @@ lock is held so a dish hovering at the boundary doesn't make it flicker.
 Chase and lunge are absolute speeds, not multiples of the cruise: they have to
 beat a planet's orbital motion (~1.3 units/sim-second) or a dish parked in a
 capture orbit could never be caught at all.
+
+## The HUD is in the frame
+
+Almost all of it is drawn onto the canvas by `panels.ts`, which reads game
+state directly and writes nothing to the DOM: a diner profile card top-left
+(portrait, name, what it is doing and for how much longer, hunger), its last
+line fading underneath, the minimap top-right, and a kitchen console along the
+bottom — the order, the roast gauge with the ordered band marked on it, fuel,
+dishes left as place settings, and the score.
+
+`VIEW.height` went 430 → 480 when the console moved in, so the playfield kept
+roughly the room it had.
+
+What is left in `index.html` is the chrome with no business inside the frame:
+the status line, the controls, the time scale. `hud.ts` is down to those, and
+every hook in it is still optional — delete a row and the thing it fed stops
+updating rather than taking the game with it.
 
 ## Art and feel
 
