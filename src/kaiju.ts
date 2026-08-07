@@ -59,6 +59,8 @@ export function createKaiju(level: Level, home: Planet, t: number): Kaiju {
   return {
     x, y,
     speed: cfg.speed,
+    // It arrives already up to cruise, rather than crawling in from nothing.
+    pace: cfg.speed,
     mouth: 0,
     distance: spawnRadius,
     rage: 0,
@@ -139,12 +141,12 @@ export function stepKaiju(
   const mode = modeFor(kaiju, cfg, toFood, toStop);
   kaiju.mode = mode;
 
-  let tx: number, ty: number, speed: number, weave: number;
+  let tx: number, ty: number, target: number, weave: number;
 
   if (pod && (mode === 'lunge' || mode === 'chase')) {
     tx = pod.x;
     ty = pod.y;
-    speed = mode === 'lunge' ? cfg.lungeSpeed : cfg.chaseSpeed;
+    target = mode === 'lunge' ? cfg.lungeSpeed : cfg.chaseSpeed;
     weave = mode === 'lunge' ? cfg.slitherStrike : cfg.slitherChase;
   } else if (mode === 'loiter') {
     // Aim at a point a little further round the ring than where it is now.
@@ -152,23 +154,31 @@ export function stepKaiju(
     const a = Math.atan2(kaiju.y - dp.y, kaiju.x - dp.x) + cfg.loiterLead;
     tx = dp.x + Math.cos(a) * cfg.loiterRadius;
     ty = dp.y + Math.sin(a) * cfg.loiterRadius;
-    speed = cfg.loiterSpeed;
+    target = cfg.loiterSpeed;
     weave = cfg.slitherAmp;
   } else {
     // Travelling to the next world on the tour, or charging the last one.
     tx = dp.x;
     ty = dp.y;
-    speed = mode === 'devour' ? cfg.devourSpeed : kaiju.speed;
+    target = mode === 'devour' ? cfg.devourSpeed : kaiju.speed;
     weave = mode === 'devour' ? cfg.slitherChase : cfg.slitherAmp;
   }
+
+  // The mode's speed is something it works up to. Winding into a lunge is the
+  // sharpest it gets; bleeding speed off is easier than gaining it.
+  const rate = kaiju.pace < target
+    ? (mode === 'lunge' ? cfg.lungeAccel : cfg.accel)
+    : cfg.brake;
+  const room = rate * dt;
+  kaiju.pace += Math.max(-room, Math.min(room, target - kaiju.pace));
 
   // The weave is what makes it slither: it never quite swims at its target.
   kaiju.phase += cfg.slitherFreq * dt * (mode === 'hunt' || mode === 'loiter' ? 1 : 1.9);
   const bearing = Math.atan2(ty - kaiju.y, tx - kaiju.x);
   kaiju.heading = bearing + Math.sin(kaiju.phase) * weave;
 
-  kaiju.x += Math.cos(kaiju.heading) * speed * dt;
-  kaiju.y += Math.sin(kaiju.heading) * speed * dt;
+  kaiju.x += Math.cos(kaiju.heading) * kaiju.pace * dt;
+  kaiju.y += Math.sin(kaiju.heading) * kaiju.pace * dt;
   dragBody(kaiju, cfg);
 
   // Patience only burns while it is waiting. Food is a distraction, and a

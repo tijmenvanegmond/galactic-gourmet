@@ -85,6 +85,15 @@ export interface KaijuConfig {
   /** Absolute speeds, not multipliers of the patient approach. */
   chaseSpeed: number;
   lungeSpeed: number;
+  /**
+   * Units per sim-second² it can gain speed at. Every mode's speed is a target
+   * it accelerates toward rather than one it snaps to.
+   */
+  accel: number;
+  /** A pounce winds up harder than a cruise does. */
+  lungeAccel: number;
+  /** Shedding speed is easier than finding it. */
+  brake: number;
   /** Extra reach while mid-lunge. */
   grabReach: number;
   /** It stops here and prowls rather than going straight for the planet. */
@@ -173,7 +182,13 @@ export type StepOutcome =
 export interface Kaiju {
   x: number;
   y: number;
+  /** Its cruise speed — a stat, which a rejected dish permanently raises. */
   speed: number;
+  /**
+   * The speed it is actually travelling at, which chases the current mode's
+   * target rather than matching it. This is what moves it.
+   */
+  pace: number;
   mouth: number;
   distance: number;
   /** Decaying flash after it is fed something it hates. */
@@ -349,6 +364,9 @@ export interface InputHandlers {
 
 export type Phase = 'aim' | 'flight' | 'orbit' | 'won' | 'lost';
 
+/** How the run finished — which end card, and what it says. */
+export type Ending = 'satisfied' | 'starved' | 'eaten';
+
 export interface GameState {
   level: Level;
   home: Planet;
@@ -359,6 +377,13 @@ export interface GameState {
   shownScore: number;
   hunger: number;
   payloads: number;
+  /** Dishes the diner ate and liked, and ones it ate and hated. */
+  served: number;
+  rejected: number;
+  /** Set once the run is over; drives which end card is drawn. */
+  ending: Ending | null;
+  /** Frames since the run ended, for the card's fade and its input gate. */
+  over: number;
   chatter: Chatter;
   pod: Payload | null;
   aim: Aim | null;

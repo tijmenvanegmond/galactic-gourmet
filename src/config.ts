@@ -55,8 +55,8 @@ export const PHYSICS = {
 };
 
 export const LAUNCH = {
-  minPull: 10,
-  maxPull: 100,
+  minPull: 20,
+  maxPull: 160,
   impulse: 0.040,   // pull length -> launch speed
   padOffset: 25,    // spawn distance above the home planet's surface
   /**
@@ -104,6 +104,19 @@ export const STICK = {
   reticle: 13,
 };
 
+// --- the end card -----------------------------------------------------------
+// The run's result, printed as the check. Frames rather than seconds, because
+// it sits outside the simulation and should not slow down with the time scale.
+export const END = {
+  fadeIn: 45,
+  /** Frames before a tap will restart — the input that ended the run must not
+   *  also skip the card that explains it. */
+  armAfter: 60,
+  width: 300,
+  /** Depth of the serrations along the torn edge. */
+  tear: 5,
+};
+
 export const CAMERA = {
   followLerp: 0.09,
   idleLerp: 0.06,
@@ -146,28 +159,28 @@ export const AUDIO = {
 // Effects stack multiplicatively when a payload carries several.
 export const SPICES: Record<SpiceName, Spice> = {
   peppercorn: { heat: 0.55, score: 1.0, color: '#8C8A82', note: 'heat shield' },
-  paprika:    { heat: 1.75, score: 1.0, color: '#D85A30', note: 'cooks fast' },
-  saffron:    { heat: 1.00, score: 2.0, color: '#EFA827', note: 'double points' },
+  paprika: { heat: 1.75, score: 1.0, color: '#D85A30', note: 'cooks fast' },
+  saffron: { heat: 1.00, score: 2.0, color: '#EFA827', note: 'double points' },
 };
 
 export const SPICE_NAMES = Object.keys(SPICES) as SpiceName[];
 
 // --- roast bands ------------------------------------------------------------
 export const BANDS: Band[] = [
-  { label: 'raw',             lo: 0,   hi: 26,       fill: '#F1EFE8', edge: '#8C8A82' },
-  { label: 'lightly toasted', lo: 26,  hi: 52,       fill: '#FAC775', edge: '#854F0B' },
-  { label: 'golden brown',    lo: 52,  hi: 78,       fill: '#D85A30', edge: '#4A1B0C' },
-  { label: 'well done',       lo: 78,  hi: 100,      fill: '#993C1D', edge: '#4A1B0C' },
-  { label: 'charcoal',        lo: 100, hi: Infinity, fill: '#2C2C2A', edge: '#0B0B0B' },
+  { label: 'raw', lo: 0, hi: 26, fill: '#F1EFE8', edge: '#8C8A82' },
+  { label: 'lightly toasted', lo: 26, hi: 52, fill: '#FAC775', edge: '#854F0B' },
+  { label: 'golden brown', lo: 52, hi: 78, fill: '#D85A30', edge: '#4A1B0C' },
+  { label: 'well done', lo: 78, hi: 100, fill: '#993C1D', edge: '#4A1B0C' },
+  { label: 'charcoal', lo: 100, hi: Infinity, fill: '#2C2C2A', edge: '#0B0B0B' },
 ];
 export const SERVEABLE: BandLabel[] = ['lightly toasted', 'golden brown', 'well done'];
 
 // --- stages -----------------------------------------------------------------
 // Dropping a stage forfeits its remaining fuel and arms the next one.
 export const STAGES: Stage[] = [
-  { name: 'booster', thrust: 0.15, fuel: 120 },
-  { name: 'kick',    thrust: 0.36, fuel: 46  },  // brief, violent, for periapsis trims
-  { name: 'trim',    thrust: 0.08, fuel: 95  },
+  { name: 'booster', thrust: 0.12, fuel: 100 },
+  { name: 'kick', thrust: 0.20, fuel: 46 },  // brief, violent, for periapsis trims
+  { name: 'trim', thrust: 0.08, fuel: 95 },
 ];
 
 // --- level 1: Sol -----------------------------------------------------------
@@ -175,23 +188,23 @@ export const STAGES: Stage[] = [
 // structuredClone preserves those references when the level is copied.
 
 const MERCURY: Planet = { name: 'Mercury', orbit: 175, a0: 0.6, w: 0.0075, radius: 11, gm: 260, fill: '#B4B2A9', edge: '#5F5E5A', style: 'rocky', spice: 'peppercorn' };
-const VENUS: Planet   = { name: 'Venus',   orbit: 295, a0: 2.4, w: -0.0044, radius: 17, gm: 620, fill: '#FAC775', edge: '#854F0B', style: 'banded', spice: 'paprika' };
-const EARTH: Planet   = { name: 'Earth',   orbit: 435, a0: 3.9, w: 0.0029, radius: 19, gm: 700, fill: '#85B7EB', edge: '#0C447C', style: 'terran', home: true };
-const MARS: Planet    = { name: 'Mars',    orbit: 600, a0: 1.2, w: 0.0018, radius: 13, gm: 420, fill: '#F0997B', edge: '#712B13', style: 'rocky', spice: 'saffron' };
+const VENUS: Planet = { name: 'Venus', orbit: 295, a0: 2.4, w: -0.0044, radius: 17, gm: 620, fill: '#FAC775', edge: '#854F0B', style: 'banded', spice: 'paprika' };
+const EARTH: Planet = { name: 'Earth', orbit: 435, a0: 3.9, w: 0.0029, radius: 19, gm: 700, fill: '#85B7EB', edge: '#0C447C', style: 'terran', home: true };
+const MARS: Planet = { name: 'Mars', orbit: 600, a0: 1.2, w: 0.0018, radius: 13, gm: 420, fill: '#F0997B', edge: '#712B13', style: 'rocky', spice: 'saffron' };
 
 // The giants are deep wells and nothing to land on. They bend a shot hard
 // enough to be worth aiming at, and swallow one that arrives.
-const JUPITER: Planet = { name: 'Jupiter', orbit: 880,  a0: 5.1, w: 0.00090, radius: 46, gm: 3000, fill: '#D9A066', edge: '#7A4B22', style: 'giant', gas: true };
-const SATURN: Planet  = { name: 'Saturn',  orbit: 1150, a0: 2.0, w: 0.00062, radius: 38, gm: 2300, fill: '#E3C68A', edge: '#8A6B36', style: 'giant', gas: true, rings: true };
-const URANUS: Planet  = { name: 'Uranus',  orbit: 1400, a0: 3.4, w: 0.00042, radius: 26, gm: 1200, fill: '#A6E0DF', edge: '#2F6E70', style: 'ice', gas: true };
+const JUPITER: Planet = { name: 'Jupiter', orbit: 880, a0: 5.1, w: 0.00090, radius: 46, gm: 3000, fill: '#D9A066', edge: '#7A4B22', style: 'giant', gas: true };
+const SATURN: Planet = { name: 'Saturn', orbit: 1150, a0: 2.0, w: 0.00062, radius: 38, gm: 2300, fill: '#E3C68A', edge: '#8A6B36', style: 'giant', gas: true, rings: true };
+const URANUS: Planet = { name: 'Uranus', orbit: 1400, a0: 3.4, w: 0.00042, radius: 26, gm: 1200, fill: '#A6E0DF', edge: '#2F6E70', style: 'ice', gas: true };
 const NEPTUNE: Planet = { name: 'Neptune', orbit: 1620, a0: 0.9, w: 0.00031, radius: 25, gm: 1300, fill: '#7C9BE6', edge: '#22346E', style: 'ice', gas: true };
 
 // Moons are the only solid ground out there, which is what makes the outer
 // system flyable: you cannot park on a giant, but you can park around its moon.
-const IO: Planet     = { name: 'Io',     orbit: 82,  a0: 0.3, w: 0.030, radius: 5.5, gm: 95,  fill: '#E8D26B', edge: '#8A7420', style: 'rocky', parent: JUPITER };
-const EUROPA: Planet = { name: 'Europa', orbit: 120, a0: 2.6, w: 0.021, radius: 5,   gm: 80,  fill: '#DCE6EA', edge: '#6E7E88', style: 'ice',   parent: JUPITER };
-const TITAN: Planet  = { name: 'Titan',  orbit: 94,  a0: 1.4, w: 0.024, radius: 6.5, gm: 115, fill: '#D8A657', edge: '#7A5520', style: 'banded', parent: SATURN };
-const TRITON: Planet = { name: 'Triton', orbit: 68,  a0: 4.2, w: -0.026, radius: 4.5, gm: 70, fill: '#CFE0E8', edge: '#5A737F', style: 'rocky', parent: NEPTUNE };
+const IO: Planet = { name: 'Io', orbit: 82, a0: 0.3, w: 0.030, radius: 5.5, gm: 95, fill: '#E8D26B', edge: '#8A7420', style: 'rocky', parent: JUPITER };
+const EUROPA: Planet = { name: 'Europa', orbit: 120, a0: 2.6, w: 0.021, radius: 5, gm: 80, fill: '#DCE6EA', edge: '#6E7E88', style: 'ice', parent: JUPITER };
+const TITAN: Planet = { name: 'Titan', orbit: 94, a0: 1.4, w: 0.024, radius: 6.5, gm: 115, fill: '#D8A657', edge: '#7A5520', style: 'banded', parent: SATURN };
+const TRITON: Planet = { name: 'Triton', orbit: 68, a0: 4.2, w: -0.026, radius: 4.5, gm: 70, fill: '#CFE0E8', edge: '#5A737F', style: 'rocky', parent: NEPTUNE };
 
 export const SOL: Level = {
   name: 'Sol',
@@ -230,6 +243,16 @@ export const SOL: Level = {
     lungeRadius: 170,
     chaseSpeed: 2.20,
     lungeSpeed: 4.60,
+    // Every speed above is a target it has to work up to, in units per
+    // sim-second². At 0.06 the climb from a cruise to a chase takes a little
+    // over a second of wall clock, which is long enough to watch it decide.
+    // The lunge is a pounce and gets there in well under half of that, so
+    // crossing into strike range still reads as a snap rather than a drift.
+    accel: 0.06,
+    lungeAccel: 0.22,
+    // Losing speed is easier than finding it, so it can drop a chase and
+    // settle back onto a prowling ring without a long ugly coast.
+    brake: 0.12,
     grabReach: 18,
     // It does not dive straight at the planet. It pulls up at this ring and
     // prowls, which is the window you actually get to cook in — and it is

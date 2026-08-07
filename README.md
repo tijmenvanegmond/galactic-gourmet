@@ -217,6 +217,19 @@ Chase and lunge are absolute speeds, not multiples of the cruise: they have to
 beat a planet's orbital motion (~1.3 units/sim-second) or a dish parked in a
 capture orbit could never be caught at all.
 
+Every one of those speeds is a target it accelerates toward (`accel`,
+`lungeAccel`, `brake`) rather than one it snaps to, so `kaiju.pace` — what
+actually moves it — always lags `kaiju.speed`, which is only the cruise stat.
+Spotting a dish used to double its speed in a single frame; now it winds up,
+and a lunge winds up nearly four times harder than a cruise so that crossing
+into strike range still reads as a snap. Braking is faster than accelerating,
+which is what lets it drop a chase and settle back onto a prowling ring
+without a long coast.
+
+The HUD clock still estimates from the target speeds rather than the current
+pace, so it reads as a steady ETA instead of flickering every time the thing
+changes its mind.
+
 ## The HUD is in the frame
 
 Almost all of it is drawn onto the canvas by `panels.ts`, which reads game

@@ -1,5 +1,5 @@
 import {
-  SIM, LAUNCH, SPICES, SPICE_NAMES, SERVEABLE, SCORE, SOL, PALETTE, JUICE, STICK,
+  SIM, LAUNCH, SPICES, SPICE_NAMES, SERVEABLE, SCORE, SOL, PALETTE, JUICE, STICK, END,
 } from './config';
 import { watchViewport } from './viewport';
 import {
@@ -64,6 +64,10 @@ export function startGame(canvas: HTMLCanvasElement): void {
       shownScore: 0,
       hunger: level.hunger,
       payloads: level.payloads,
+      served: 0,
+      rejected: 0,
+      ending: null,
+      over: 0,
       chatter: { line: '', life: 0 },
       pod: null,
       aim: null,
@@ -336,6 +340,7 @@ export function startGame(canvas: HTMLCanvasElement): void {
       state.hunger = Math.max(0, state.hunger - points);
 
       if (points === 0) {
+        state.rejected += 1;
         // An insult costs it patience as well as making it faster.
         const lost = enrage(state.kaiju, state.level.kaiju);
         hud.setStatus(
@@ -348,6 +353,7 @@ export function startGame(canvas: HTMLCanvasElement): void {
         if (lost > 0) pop(state.juice, pod.x, pod.y - 36, `−${lost}s`, PALETTE.kaijuRage, 13);
         audio.sfx.reject();
       } else {
+        state.served += 1;
         // A dish it likes buys you more time to cook the next one.
         const gained = appease(state.kaiju, state.level.kaiju);
         const rack = pod.rack.length ? ` with ${pod.rack.join(' + ')}` : ' plain';
@@ -391,12 +397,14 @@ export function startGame(canvas: HTMLCanvasElement): void {
 
     if (state.hunger <= 0) {
       state.phase = 'won';
+      state.ending = 'satisfied';
       flash(state.juice, PALETTE.heading, 0.5);
       audio.sfx.win();
       say(bark('win'), true);
       hud.setStatus(`${shortName(state.kaiju.name)} is satisfied. ${state.level.name} survives — final score ${state.score}. R to play again.`);
     } else if (state.payloads <= 0) {
       state.phase = 'lost';
+      state.ending = 'starved';
       audio.sfx.lose();
       say(bark('lose'), true);
       hud.setStatus(`Out of payloads. Earth is on the menu — score ${state.score}. R to try again.`);
@@ -466,6 +474,7 @@ export function startGame(canvas: HTMLCanvasElement): void {
 
     if (step.reachedHome) {
       state.phase = 'lost';
+      state.ending = 'eaten';
       flash(state.juice, PALETTE.kaijuRage, 0.6);
       shake(state.juice, 1);
       audio.sfx.lose();
@@ -484,6 +493,9 @@ export function startGame(canvas: HTMLCanvasElement): void {
     if (state.stick && state.phase !== 'flight') clearStick();
 
     if (state.phase === 'won' || state.phase === 'lost') {
+      // Counted in frames, not sim time: the card belongs to the player, not
+      // to the simulation, and should not crawl at a low time scale.
+      state.over += 1;
       stepJuice(j);
       stepEffects();
       return;
@@ -566,6 +578,12 @@ export function startGame(canvas: HTMLCanvasElement): void {
   // ---- wiring -------------------------------------------------------------
   attachInput(canvas, input, {
     onDragStart(pt) {
+      // On the end card a tap is the only way back on a phone. It is gated on
+      // `armAfter` so the tap that ended the run cannot also skip the card.
+      if (state.ending) {
+        if (state.over > END.armAfter) reset();
+        return false;
+      }
       if (state.phase === 'flight' && state.pod) {
         // A dry stage is nothing but weight. Touching down on one drops it and
         // arms the next, so the throttle keeps working without a keyboard.

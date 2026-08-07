@@ -3,6 +3,7 @@ import { planetPos, bandFor, bandIndex } from './world';
 import { toScreen } from './camera';
 import { shakeTransform } from './juice';
 import { drawPanels } from './panels';
+import { drawEndCard } from './endcard';
 import {
   drawSprite, planetSprite, starSprite, kaijuHeadSprite, kaijuSegmentSprite,
   dishSprite, pipSprite, SEGMENT_UNIT,
@@ -549,6 +550,7 @@ export function render(ctx: Ctx, state: GameState): void {
 
   drawVignette(ctx);
   drawPanels(ctx, state);
+  drawEndCard(ctx, state);
 
   if (juice.flash > 0) {
     ctx.globalAlpha = juice.flash * 0.6;
