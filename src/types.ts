@@ -310,9 +310,25 @@ export interface Juice {
 }
 
 export interface Input {
+  /** Keyboard rudder, -1..1. */
   steer: number;
   thrust: boolean;
   dragging: boolean;
+  /**
+   * Heading the drag stick is asking for, in world radians, or null when
+   * nothing is steering by drag. Takes precedence over `steer`.
+   */
+  heading: number | null;
+  /** The drag stick is pushed past its burn ring. */
+  burn: boolean;
+}
+
+/** A live steering drag: the point being flown at, in screen pixels. */
+export interface Stick {
+  x: number;
+  y: number;
+  /** Far enough from the pod to be a command rather than a thumb on the hull. */
+  live: boolean;
 }
 
 /** Physics-side callbacks, so the simulation stays free of rendering concerns. */
@@ -347,6 +363,10 @@ export interface GameState {
   pod: Payload | null;
   aim: Aim | null;
   dragOffset: Vec2 | null;
+  /** Live steering drag, drawn as a thumb stick. Null when not steering. */
+  stick: Stick | null;
+  /** Has the player found the stick this run — the hint hides once they have. */
+  stickUsed: boolean;
   particles: Particle[];
   ghosts: Ghost[];
   juice: Juice;

@@ -3,7 +3,7 @@ import { unlock } from './audio';
 import type { Input, InputHandlers, Vec2 } from './types';
 
 export function createInput(): Input {
-  return { steer: 0, thrust: false, dragging: false };
+  return { steer: 0, thrust: false, dragging: false, heading: null, burn: false };
 }
 
 function canvasPoint(canvas: HTMLCanvasElement, e: PointerEvent): Vec2 {
@@ -27,15 +27,22 @@ export function attachInput(
     if (handlers.onDragStart(pt)) input.dragging = true;
   });
 
-  canvas.addEventListener('pointermove', e => {
+  // Move and release listen on the window rather than the canvas: a steering
+  // drag routinely wanders off the edge of the frame, and losing the pointer
+  // there would leave the pod stuck on its last heading.
+  window.addEventListener('pointermove', e => {
     if (input.dragging) handlers.onDragMove(canvasPoint(canvas, e));
   });
 
-  window.addEventListener('pointerup', () => {
+  function endDrag(): void {
     if (!input.dragging) return;
     input.dragging = false;
     handlers.onRelease();
-  });
+  }
+
+  window.addEventListener('pointerup', endDrag);
+  // A cancelled pointer (a system gesture taking over, say) never sends up.
+  window.addEventListener('pointercancel', endDrag);
 
   window.addEventListener('keydown', e => {
     unlock();

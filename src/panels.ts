@@ -4,8 +4,9 @@
 // directly — nothing here writes to the DOM.
 // ---------------------------------------------------------------------------
 
-import { VIEW, PANELS, PALETTE, PHYSICS, SPICES, STAGES } from './config';
+import { VIEW, PANELS, PALETTE, PHYSICS, SPICES, STAGES, STICK } from './config';
 import { planetPos, bandFor, bandByLabel } from './world';
+import { toScreen } from './camera';
 import { kaijuClock } from './kaiju';
 import { isMuted } from './audio';
 import { drawSprite, kaijuHeadSprite, dishSprite, pipSprite } from './sprites';
@@ -34,8 +35,12 @@ function label(ctx: Ctx, s: string, x: number, y: number, o: TextOptions = {}): 
   ctx.fillStyle = o.color ?? PALETTE.label;
   if (o.spacing) {
     // Canvas has no letter-spacing everywhere, so wide-track small caps are
-    // drawn a glyph at a time.
-    let cursor = x;
+    // drawn a glyph at a time — which means the alignment has to be applied by
+    // hand too, since the cursor ignores textAlign.
+    const width = ctx.measureText(s).width + o.spacing * Math.max(0, s.length - 1);
+    const align = o.align ?? 'left';
+    let cursor = align === 'center' ? x - width / 2 : align === 'right' ? x - width : x;
+    ctx.textAlign = 'left';
     for (const ch of s) {
       ctx.fillText(ch, cursor, y);
       cursor += ctx.measureText(ch).width + o.spacing;
@@ -360,10 +365,86 @@ function drawMinimap(ctx: Ctx, state: GameState): void {
   ctx.restore();
 }
 
+// --- steering ---------------------------------------------------------------
+
+/** Where the drag is pointing the pod: a reticle at the finger, tethered back. */
+function drawStick(ctx: Ctx, state: GameState): void {
+  const s = state.stick;
+  const pod = state.pod;
+  if (!s || !pod) {
+    // A gesture nobody can see is a gesture nobody finds, so it says so —
+    // until the first time someone uses it, and then never again this run.
+    if (state.phase === 'flight' && !state.stickUsed) {
+      label(ctx, 'DRAG TO POINT AND BURN',
+        VIEW.width / 2, VIEW.height - PANELS.consoleHeight - 14,
+        { size: 8, spacing: 1.2, align: 'center', alpha: 0.5 });
+    }
+    return;
+  }
+
+  const o = toScreen(state.cam, pod.x, pod.y);
+  const color = s.live ? PALETTE.exhaust : PALETTE.label;
+  const r = STICK.reticle;
+
+  ctx.save();
+  ctx.globalAlpha = 0.85;
+
+  // The cut-out ring sits on the pod, because that is what the drag is
+  // measured from — come back inside it and the engine stops.
+  ctx.strokeStyle = 'rgba(140,138,130,0.45)';
+  ctx.lineWidth = 1;
+  ctx.setLineDash([3, 5]);
+  ctx.beginPath();
+  ctx.arc(o.x, o.y, STICK.deadzone, 0, TAU);
+  ctx.stroke();
+
+  if (s.live) {
+    // Tether: what the pod is turning toward, and burning along once it gets
+    // there. Drawn short of the reticle so the two do not merge.
+    const dx = s.x - o.x, dy = s.y - o.y;
+    const d = Math.hypot(dx, dy) || 1;
+    ctx.strokeStyle = color;
+    ctx.globalAlpha = 0.5;
+    ctx.beginPath();
+    ctx.moveTo(o.x + (dx / d) * STICK.deadzone, o.y + (dy / d) * STICK.deadzone);
+    ctx.lineTo(s.x - (dx / d) * (r + 3), s.y - (dy / d) * (r + 3));
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    ctx.globalAlpha = 0.9;
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(s.x, s.y, r, 0, TAU);
+    ctx.stroke();
+    // crosshair ticks, so it reads as a target rather than a bubble
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    for (const a of [0, Math.PI / 2, Math.PI, -Math.PI / 2]) {
+      ctx.moveTo(s.x + Math.cos(a) * (r - 4), s.y + Math.sin(a) * (r - 4));
+      ctx.lineTo(s.x + Math.cos(a) * (r + 5), s.y + Math.sin(a) * (r + 5));
+    }
+    ctx.stroke();
+    ctx.fillStyle = color;
+    ctx.globalAlpha = 0.22;
+    ctx.beginPath();
+    ctx.arc(s.x, s.y, r - 3, 0, TAU);
+    ctx.fill();
+  }
+  ctx.restore();
+
+  if (s.live) {
+    label(ctx, pod.burning ? 'BURN' : 'NO FUEL', s.x, s.y + r + 14,
+      { size: 8, spacing: 1.4, align: 'center', color, alpha: 0.9 });
+  }
+}
+
 /** Draws every panel. Call in screen space, after the world and the shake. */
 export function drawPanels(ctx: Ctx, state: GameState): void {
   drawProfile(ctx, state);
   drawChatter(ctx, state);
   drawMinimap(ctx, state);
   drawConsole(ctx, state);
+  // Last, because a thumb near the bottom of the frame lands on the console.
+  drawStick(ctx, state);
 }

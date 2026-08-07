@@ -48,6 +48,10 @@ export const PHYSICS = {
   planetSoft: 2200,     // softening for planet wells
   clearance: 46,        // pod ignores a just-left planet inside this margin
   worldBoundary: 2400,  // past this the payload is lost to deep space
+  // Radians per sim-second the pod can swing its nose. Fast enough that
+  // pointing at a target reads as pointing rather than as waiting: a
+  // half-turn takes well under a second, so the burn is what you steer with.
+  turnRate: 0.33,
 };
 
 export const LAUNCH = {
@@ -66,6 +70,18 @@ export const ORBIT = {
   rate: 0.055,       // radians per sim-second at refRadius
   refRadius: 34,     // orbits tighter than this sweep proportionally faster
   inheritVelocity: 1.0,
+};
+
+// --- drag steering ----------------------------------------------------------
+// There is no keyboard on a phone, so a drag during flight flies the pod: it
+// turns toward wherever the finger is and burns on the way. Both distances are
+// screen pixels — measured from the pod, not from where the drag began.
+export const STICK = {
+  /** Inside this, a drag is neither steering nor burning: a thumb resting on
+   *  the ship should not spin it, and it is where you go to cut the engine. */
+  deadzone: 30,
+  /** The reticle drawn at the finger. */
+  reticle: 13,
 };
 
 export const CAMERA = {

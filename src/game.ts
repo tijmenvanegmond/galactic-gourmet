@@ -1,5 +1,5 @@
 import {
-  SIM, LAUNCH, SPICES, SPICE_NAMES, SERVEABLE, SCORE, SOL, PALETTE, JUICE,
+  SIM, LAUNCH, SPICES, SPICE_NAMES, SERVEABLE, SCORE, SOL, PALETTE, JUICE, STICK,
 } from './config';
 import { watchViewport } from './viewport';
 import {
@@ -68,6 +68,8 @@ export function startGame(canvas: HTMLCanvasElement): void {
       pod: null,
       aim: null,
       dragOffset: null,
+      stick: null,
+      stickUsed: false,
       particles: [],
       ghosts: [],
       juice: createJuice(),
@@ -96,7 +98,7 @@ export function startGame(canvas: HTMLCanvasElement): void {
     state = createState();
 
     say(bark('arrive'), true);
-    hud.setStatus('Drag back from Earth and release. R restarts.');
+    hud.setStatus('Drag out from Earth toward where it should fly, and release. R restarts.');
   }
 
   function newOrder(): void {
@@ -175,8 +177,11 @@ export function startGame(canvas: HTMLCanvasElement): void {
     const off = state.dragOffset;
     if (!off) { state.aim = null; return; }
 
+    // The drag points where the dish should go, rather than pulling back
+    // against it — the same "aim at it" gesture as steering in flight. Length
+    // is still the power, so it is a throw rather than a catapult.
     const len = Math.hypot(off.x, off.y) || 1;
-    const ux = -off.x / len, uy = -off.y / len;
+    const ux = off.x / len, uy = off.y / len;
     const pod = state.pod;
 
     let originX: number, originY: number;
@@ -210,6 +215,45 @@ export function startGame(canvas: HTMLCanvasElement): void {
     };
   }
 
+  // ---- steering -----------------------------------------------------------
+  /**
+   * In flight the drag flies the pod: it turns toward wherever the finger is
+   * and burns while it does. Resolved every frame rather than on move, because
+   * the camera keeps sliding under a finger that is holding perfectly still.
+   */
+  function aimStick(): void {
+    const s = state.stick;
+    const pod = state.pod;
+    if (!s || !pod) return;
+
+    const w = toWorld(state.cam, s.x, s.y);
+    const dx = w.x - pod.x, dy = w.y - pod.y;
+    // The deadzone is a screen distance, so it stays a thumb's width across
+    // however far the camera has pulled out.
+    s.live = Math.hypot(dx, dy) * state.cam.zoom > STICK.deadzone;
+
+    input.heading = s.live ? Math.atan2(dy, dx) : null;
+    input.burn = s.live;
+    if (s.live) state.stickUsed = true;
+  }
+
+  /** Drop the live stage and arm the next. Its remaining fuel is forfeited. */
+  function dropStage(): boolean {
+    const pod = state.pod;
+    if (!pod || pod.orbit || !jettison(pod)) return false;
+    emit(pod.x, pod.y, PALETTE.smoke, 14, 2.6, 'debris', 2);
+    shake(state.juice, 0.3);
+    audio.sfx.stage();
+    hud.setStatus(`Stage ${pod.stage + 1} armed — ${currentStage(pod).name}.`);
+    return true;
+  }
+
+  function clearStick(): void {
+    state.stick = null;
+    input.heading = null;
+    input.burn = false;
+  }
+
   function release(): void {
     const a = state.aim;
     if (!a) return;
@@ -224,7 +268,7 @@ export function startGame(canvas: HTMLCanvasElement): void {
       shake(state.juice, 0.22 + a.power * 0.2);
       kick(state.cam, 0.10);
       audio.sfx.relaunch(a.power);
-      hud.setStatus('Relaunched. Burn to steer it into the kaiju.');
+      hud.setStatus('Relaunched. Drag to point it at the kaiju and burn.');
     } else {
       if (state.phase !== 'aim' || state.payloads <= 0) return;
       state.pod = createPayload(a.originX, a.originY, a.vx, a.vy, state.home);
@@ -235,7 +279,7 @@ export function startGame(canvas: HTMLCanvasElement): void {
       shake(state.juice, 0.25 + a.power * 0.25);
       kick(state.cam, 0.12);
       audio.sfx.launch(a.power);
-      hud.setStatus('Hold burn to thrust, arrows to steer, S to drop a stage.');
+      hud.setStatus('Drag anywhere and it turns and burns toward you. S drops a stage.');
     }
 
     state.dragOffset = null;
@@ -261,7 +305,7 @@ export function startGame(canvas: HTMLCanvasElement): void {
     kick(state.cam, 0.08);
     audio.sfx.capture();
 
-    hud.setStatus(`Caught by ${planet.name}. It keeps cooking up there — drag to relaunch.`);
+    hud.setStatus(`Caught by ${planet.name}. It keeps cooking up there — drag out to relaunch.`);
   }
 
   // ---- resolution ---------------------------------------------------------
@@ -427,6 +471,11 @@ export function startGame(canvas: HTMLCanvasElement): void {
   function update(): void {
     const j = state.juice;
 
+    // A drag can outlive the flight it was steering — the dish gets caught, or
+    // the run ends under a held finger. Drop it, or the throttle stays open
+    // over whatever launches next.
+    if (state.stick && state.phase !== 'flight') clearStick();
+
     if (state.phase === 'won' || state.phase === 'lost') {
       stepJuice(j);
       stepEffects();
@@ -447,6 +496,7 @@ export function startGame(canvas: HTMLCanvasElement): void {
 
     const pod = state.pod;
     if (pod) {
+      aimStick();
       const outcome = stepPayload(pod, state.t, state.level, input, hooks);
 
       const prox = heatProximity(Math.hypot(pod.x, pod.y));
@@ -509,22 +559,28 @@ export function startGame(canvas: HTMLCanvasElement): void {
   // ---- wiring -------------------------------------------------------------
   attachInput(canvas, input, {
     onDragStart(pt) {
+      if (state.phase === 'flight' && state.pod) {
+        // A dry stage is nothing but weight. Touching down on one drops it and
+        // arms the next, so the throttle keeps working without a keyboard.
+        if (state.pod.fuel <= 0) dropStage();
+        state.stick = { x: pt.x, y: pt.y, live: false };
+        return true;
+      }
       if (state.phase === 'orbit' && state.pod) { setDragOffset(pt); return true; }
       if (state.phase !== 'aim' || state.payloads <= 0) return false;
       setDragOffset(pt);
       return true;
     },
-    onDragMove(pt) { setDragOffset(pt); },
-    onRelease: release,
-    onStage() {
-      const pod = state.pod;
-      if (pod && !pod.orbit && jettison(pod)) {
-        emit(pod.x, pod.y, PALETTE.smoke, 14, 2.6, 'debris', 2);
-        shake(state.juice, 0.3);
-        audio.sfx.stage();
-        hud.setStatus(`Stage ${pod.stage + 1} armed — ${currentStage(pod).name}.`);
-      }
+    onDragMove(pt) {
+      const s = state.stick;
+      if (s) { s.x = pt.x; s.y = pt.y; }
+      else setDragOffset(pt);
     },
+    onRelease() {
+      if (state.stick) clearStick();
+      else release();
+    },
+    onStage: dropStage,
     onRestart: reset,
     onMute() { audio.toggleMute(); },
   });

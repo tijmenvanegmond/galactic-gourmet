@@ -48,14 +48,34 @@ underscore.
 
 | | |
 |---|---|
-| drag + release | launch (drag *away* from the direction of flight) |
+| drag + release | launch, *toward* where the dish should go. Length is power |
 | drag + release *while parked* | relaunch out of a capture orbit, free |
+| drag *during flight* | turn toward your finger and burn while turning |
+| touch *with a dry stage* | drop it and arm the next |
 | space / burn | thrust along current heading, drains the live stage |
 | ← → or A D | steer |
 | S | drop the live stage and arm the next |
 | R | restart |
 | M | mute (no button any more — keyboard only) |
 | sim speed slider | global time scale, live |
+
+Every action has a drag, because there is no keyboard on a phone. All three
+drags are the same gesture — *point at where you want the dish to be* — rather
+than a catapult you pull back against; a launch that flew opposite the drag
+while the in-flight drag flew toward it would have been two contradictory
+idioms sharing one finger.
+
+In flight the drag is measured from the pod, not from where the finger landed,
+so it reads as pointing rather than as a joystick. Inside `STICK.deadzone` of
+the pod nothing happens: that is where you go to cut the engine, and it stops
+a thumb resting on the ship from spinning it. The throttle is not separate —
+if you are pointing, you are burning, which is the only honest reading of
+"fly at this".
+
+`PHYSICS.turnRate` sets how fast the nose comes round; it wants to be quick
+enough that pointing feels like pointing. The keys steer as a rudder (hold and
+it keeps turning) while a drag names a heading, and the turn is clamped on the
+final step so it settles on that heading instead of hunting past it.
 
 ## Layout
 

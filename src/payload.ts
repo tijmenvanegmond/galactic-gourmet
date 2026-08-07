@@ -7,7 +7,6 @@ import type {
   Input, Level, Payload, PayloadHooks, Planet, Stage, StepOutcome,
 } from './types';
 
-const TURN_RATE = 0.055;  // radians per sim-second
 const FLYING: StepOutcome = { kind: 'flying' };
 
 // Loss reasons are shared so the caller can react to them without matching
@@ -39,6 +38,22 @@ export function createPayload(
 
 export function currentStage(pod: Payload): Stage {
   return STAGES[pod.stage];
+}
+
+/**
+ * How hard to turn this step, as a fraction of the turn rate.
+ *
+ * A key is a rudder — hold it and it keeps turning. A drag names a heading
+ * instead, and the clamp is what makes that work: the pod turns at full rate
+ * until the last step, which is scaled down to land exactly on the heading
+ * rather than swinging past it and hunting back.
+ */
+function steerRate(pod: Payload, input: Input, dt: number): number {
+  if (input.heading === null) return input.steer;
+  const d = input.heading - pod.angle;
+  const shortest = Math.atan2(Math.sin(d), Math.cos(d));
+  const step = PHYSICS.turnRate * dt;
+  return Math.max(-1, Math.min(1, shortest / step));
 }
 
 /** Drops the live stage and arms the next. Remaining fuel is forfeited. */
@@ -147,9 +162,9 @@ export function stepPayload(
 
   // --- free flight ---------------------------------------------------------
   const stage = STAGES[pod.stage];
-  pod.angle += input.steer * TURN_RATE * dt;
+  pod.angle += steerRate(pod, input, dt) * PHYSICS.turnRate * dt;
 
-  pod.burning = input.thrust && pod.fuel > 0;
+  pod.burning = (input.thrust || input.burn) && pod.fuel > 0;
   if (pod.burning) {
     pod.vx += Math.cos(pod.angle) * stage.thrust * dt;
     pod.vy += Math.sin(pod.angle) * stage.thrust * dt;
