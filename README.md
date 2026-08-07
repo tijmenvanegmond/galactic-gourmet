@@ -154,6 +154,10 @@ Two things make this a mechanic rather than a mercy:
 - **A relaunch inherits orbital velocity**, so where you release in the sweep
   decides the exit vector. It costs no payload — only kaiju ETA.
 
+A relaunch leaves with the orbital velocity of wherever it is parked, not with
+the planet's rail crawl — see "Launches borrow an orbit" below. That is what
+makes a deep parking orbit a launchpad rather than a sentence.
+
 The planet you just left is suppressed (gravity *and* hull) until the pod
 clears `PHYSICS.clearance`, which is the same rule that lets a launch escape
 Earth. That is one field on the payload, `ignore`, and it replaced the old
@@ -244,19 +248,43 @@ hit-stop frames, shockwaves and floating text, and never reads them back.
 behind the first input event because a browser will not start an audio context
 before then.
 
-## Known simplification
+## Launches borrow an orbit
 
 Planet orbits are kinematic — placed on rails via `a0 + w·t` — rather than
-integrated from the same `GM` that governs the payload. The two systems are
-therefore inconsistent: Earth travels at ~1.3 units/frame where a true
-circular orbit at its radius would need ~9.9. The payload inherits almost none
-of Earth's momentum, so a weak launch simply falls at the star instead of
-requiring a retrograde burn.
+integrated from the same `GM` that governs the payload, so a planet travels
+far slower than its radius really demands: Earth's rail is 1.3 units/s where a
+circular orbit there needs 9.8.
 
-It plays fine as arcade orbital mechanics. Making it consistent means either
-slowing the whole system ~7× or decoupling visual orbit rate from physics
-time. Worth deciding before adding more systems, because level design will
-bake in whichever choice is made.
+A launch that inherited its planet's motion therefore inherited nothing, and
+had to buy the entire climb out of the star's well from a standing start.
+Escaping costs about 21.6 units/s from a Mercury parking orbit, 16.8 from
+Venus and 13.9 from Earth, against the 12 a maximum pull buys. So the inner
+system was a trap, and precisely the wrong one: the deepest well is also the
+hottest oven, which made the best place to cook the one place you could not
+leave.
+
+A launch is instead given the velocity a real circular orbit at that point
+would have (`LAUNCH.inheritOrbital`, `world.ts:launchVelocity`), in the
+direction its world goes round the star — Venus is retrograde, and hands out
+retrograde launches. The gift is largest exactly where the well is deepest, so
+it scales itself: it rescues Mercury without over-serving Mars, which no
+single added constant could do. A Mercury-to-Earth transfer that cost 16.6
+units/s from rest costs about 2.9 from orbit.
+
+What it costs is the old default trajectory. A released dish now *orbits*
+rather than falling at the star, so cooking means throwing retrograde hard
+enough to kill the speed you were given — around a 0.82 pull from Earth.
+Reaching the star is a deliberate act now rather than what happens if you do
+nothing.
+
+`LAUNCH.inheritOrbital` is the dial, but it is not a gentle one: 1 is a circle
+and anything less is an ellipse that dips inward, so it trades "leaving is
+easy" against "everything falls at the star". Values in between are worst near
+the star, where the dip is fatal — a Mercury relaunch at 0.6 goes to the
+corona, not to Earth.
+
+The planets are still on rails, and still inconsistent with their own gravity.
+Only the payload was made honest.
 
 ## Next
 

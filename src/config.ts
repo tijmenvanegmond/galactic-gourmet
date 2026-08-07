@@ -59,6 +59,26 @@ export const LAUNCH = {
   maxPull: 230,
   impulse: 0.052,   // pull length -> launch speed
   padOffset: 30,    // spawn distance above the home planet's surface
+  /**
+   * How much of a real circular orbit's velocity a launch is given for free.
+   *
+   * The planets ride slow kinematic rails — Earth's is 1.3 units/s where a
+   * true orbit at its radius needs 9.8 — so inheriting *their* motion
+   * inherited nothing, and every dish had to buy the whole climb out of the
+   * star's well from a standing start. That is what made Mercury and Venus a
+   * sentence: deepest well, hottest oven, no way back out.
+   *
+   * Borrowing the orbit the launch point ought to have scales itself. It is
+   * largest exactly where the well is deepest, so it fixes Mercury without
+   * over-serving Mars, which no single constant could do.
+   *
+   * At 1 a released dish simply orbits, and reaching the star means throwing
+   * retrograde hard enough to kill that speed. Not a gentle dial: anything
+   * less than 1 is an ellipse that dips inward, so lowering it makes the star
+   * easier to reach and everything else harder to hold — and near the star the
+   * dip is fatal rather than useful.
+   */
+  inheritOrbital: 1.0,
 };
 
 // --- capture orbits ---------------------------------------------------------

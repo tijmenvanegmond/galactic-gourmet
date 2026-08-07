@@ -1,4 +1,4 @@
-import { SUN, PHYSICS, SPICES, BANDS } from './config';
+import { SUN, PHYSICS, LAUNCH, SPICES, BANDS } from './config';
 import type { Band, BandLabel, Planet, SpiceName, SpicedPlanet, Vec2 } from './types';
 
 export interface GravitySample {
@@ -62,6 +62,32 @@ export function gravityAt(
   }
 
   return { ax, ay, sunDist, hit };
+}
+
+/**
+ * The speed a circular orbit at this distance from the star actually needs,
+ * from the same softened field the payload flies in: a = gm/(r²+soft), and a
+ * circle needs a = v²/r.
+ */
+export function orbitalSpeed(r: number): number {
+  return Math.sqrt((SUN.gm * r) / (r * r + SUN.soft));
+}
+
+/** The outermost body a moon is ultimately riding — whose way round the star. */
+function rootOf(p: Planet): Planet {
+  return p.parent ? rootOf(p.parent) : p;
+}
+
+/**
+ * The velocity a launch borrows from its own position: the orbit it ought to
+ * already be in, in the same direction its world goes round the star. Retrograde
+ * worlds hand out retrograde launches.
+ */
+export function launchVelocity(x: number, y: number, from: Planet): Vec2 {
+  const r = Math.hypot(x, y) || 1;
+  const dir = Math.sign(rootOf(from).w) || 1;
+  const v = orbitalSpeed(r) * LAUNCH.inheritOrbital * dir;
+  return { x: (-y / r) * v, y: (x / r) * v };
 }
 
 /** Roast units per sim-second at a given distance from the star. */

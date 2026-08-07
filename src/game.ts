@@ -4,7 +4,7 @@ import {
 import { watchViewport } from './viewport';
 import {
   planetPos, planetVel, homePlanet, bandFor, bandIndex,
-  scoreMultiplier, heatProximity,
+  scoreMultiplier, heatProximity, launchVelocity,
 } from './world';
 import { predict } from './trajectory';
 import {
@@ -190,16 +190,23 @@ export function startGame(canvas: HTMLCanvasElement): void {
     let ignore: Planet;
 
     if (pod && pod.orbit) {
+      const planet = pod.orbit.planet;
+      const pv = planetVel(planet, state.t);
+      const orb = launchVelocity(pod.x, pod.y, planet);
       originX = pod.x; originY = pod.y;
-      baseVx = pod.vx; baseVy = pod.vy;
+      // Keep how the pod is moving around its planet — release point still
+      // decides the exit vector — but swap the planet's rail crawl underneath
+      // it for the orbital velocity that place ought to have.
+      baseVx = pod.vx - pv.x + orb.x;
+      baseVy = pod.vy - pv.y + orb.y;
       handleX = pod.x + off.x; handleY = pod.y + off.y;
-      ignore = pod.orbit.planet;
+      ignore = planet;
     } else {
       const h = planetPos(state.home, state.t);
-      const hv = planetVel(state.home, state.t);
       originX = h.x + ux * (state.home.radius + LAUNCH.padOffset);
       originY = h.y + uy * (state.home.radius + LAUNCH.padOffset);
-      baseVx = hv.x; baseVy = hv.y;
+      const orb = launchVelocity(originX, originY, state.home);
+      baseVx = orb.x; baseVy = orb.y;
       handleX = h.x + off.x; handleY = h.y + off.y;
       ignore = state.home;
     }
