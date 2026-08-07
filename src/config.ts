@@ -55,10 +55,10 @@ export const PHYSICS = {
 };
 
 export const LAUNCH = {
-  minPull: 40,
-  maxPull: 230,
-  impulse: 0.052,   // pull length -> launch speed
-  padOffset: 30,    // spawn distance above the home planet's surface
+  minPull: 10,
+  maxPull: 100,
+  impulse: 0.040,   // pull length -> launch speed
+  padOffset: 25,    // spawn distance above the home planet's surface
   /**
    * How much of a real circular orbit's velocity a launch is given for free.
    *
