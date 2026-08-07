@@ -1,8 +1,5 @@
 name: Deploy to GitHub Pages
 
-# Builds on every push to main and republishes the gh-pages branch, so what is
-# live always matches main rather than whatever happened to be in someone's
-# working tree when they ran `npm run deploy`.
 on:
   push:
     branches: [main]
@@ -11,7 +8,6 @@ on:
 permissions:
   contents: write
 
-# Never let two deploys race for the branch; the newest push wins.
 concurrency:
   group: gh-pages-deploy
   cancel-in-progress: true
@@ -20,11 +16,11 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
         with:
           node-version: 24
           package-manager-cache: true
+      - uses: actions/checkout@v7
       - run: npm ci
       - run: npm run build
       - name: Publish dist to gh-pages
