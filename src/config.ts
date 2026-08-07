@@ -37,7 +37,7 @@ export const SUN = {
   gm: 42000,
   soft: 2600,        // gravity softening, stops the singularity at r→0
   heatRadius: 380,   // outside this, nothing cooks
-  heatRate: 1.30,    // roast units per sim-second at the surface
+  heatRate: 1,    // roast units per sim-second at the surface
   // Falloff exponent. 2.0 crams all the heat into the corona, which makes the
   // gap between "raw" and "vaporised" almost unflyable. Lower spreads the
   // oven outward and gives the player a real grazing envelope.
@@ -56,7 +56,7 @@ export const PHYSICS = {
 
 export const LAUNCH = {
   minPull: 20,
-  maxPull: 160,
+  maxPull: 180,
   impulse: 0.040,   // pull length -> launch speed
   padOffset: 25,    // spawn distance above the home planet's surface
   /**
@@ -78,7 +78,7 @@ export const LAUNCH = {
    * easier to reach and everything else harder to hold — and near the star the
    * dip is fatal rather than useful.
    */
-  inheritOrbital: 1.0,
+  inheritOrbital: 0.75,
 };
 
 // --- capture orbits ---------------------------------------------------------
@@ -159,7 +159,7 @@ export const AUDIO = {
 // Effects stack multiplicatively when a payload carries several.
 export const SPICES: Record<SpiceName, Spice> = {
   peppercorn: { heat: 0.55, score: 1.0, color: '#8C8A82', note: 'heat shield' },
-  paprika: { heat: 1.75, score: 1.0, color: '#D85A30', note: 'cooks fast' },
+  paprika: { heat: 0.7, score: 1.0, color: '#D85A30', note: 'cooks fast' },
   saffron: { heat: 1.00, score: 2.0, color: '#EFA827', note: 'double points' },
 };
 
