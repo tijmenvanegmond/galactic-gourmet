@@ -20,6 +20,7 @@ import {
 } from './camera';
 import { render } from './render';
 import { createInput, attachInput } from './input';
+import { hitsButton, toggle as toggleFullscreen } from './fullscreen';
 import { createJuice, shake, freeze, flash, ring, pop, stepJuice } from './juice';
 import * as audio from './audio';
 import * as hud from './hud';
@@ -578,6 +579,12 @@ export function startGame(canvas: HTMLCanvasElement): void {
   // ---- wiring -------------------------------------------------------------
   attachInput(canvas, input, {
     onDragStart(pt) {
+      // The button is chrome sitting on the playfield, so it gets first refusal
+      // on a press — before aiming, steering, or dismissing the end card.
+      if (hitsButton(pt)) {
+        toggleFullscreen(canvas);
+        return false;
+      }
       // On the end card a tap is the only way back on a phone. It is gated on
       // `armAfter` so the tap that ended the run cannot also skip the card.
       if (state.ending) {

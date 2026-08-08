@@ -9,6 +9,7 @@ import { planetPos, bandFor, bandByLabel } from './world';
 import { toScreen } from './camera';
 import { kaijuClock } from './kaiju';
 import { isMuted } from './audio';
+import { buttonRect, isFullscreen, isSupported } from './fullscreen';
 import { drawSprite, kaijuHeadSprite, dishSprite, pipSprite } from './sprites';
 import type { GameState, SpiceName } from './types';
 
@@ -312,7 +313,7 @@ function drawConsole(ctx: Ctx, state: GameState): void {
 // --- overview ---------------------------------------------------------------
 
 function drawMinimap(ctx: Ctx, state: GameState): void {
-  const M = 88;
+  const M = PANELS.minimapSize;
   const mx = VIEW.width - M - PANELS.margin;
   const my = PANELS.margin;
   const half = M / 2;
@@ -360,6 +361,54 @@ function drawMinimap(ctx: Ctx, state: GameState): void {
       ctx.strokeStyle = PALETTE.predictCapture;
       ctx.lineWidth = 1;
       ctx.beginPath(); ctx.arc(px, py, 4.5, 0, TAU); ctx.stroke();
+    }
+  }
+  ctx.restore();
+}
+
+// --- fullscreen -------------------------------------------------------------
+
+/** One corner bracket. A negative arm turns it inside out, which is the icon. */
+function bracket(
+  ctx: Ctx,
+  cx: number,
+  cy: number,
+  sx: number,
+  sy: number,
+  corner: number,
+  arm: number,
+): void {
+  const x = cx + sx * corner, y = cy + sy * corner;
+  ctx.beginPath();
+  ctx.moveTo(x - sx * arm, y);
+  ctx.lineTo(x, y);
+  ctx.lineTo(x, y - sy * arm);
+  ctx.stroke();
+}
+
+/**
+ * Four brackets: opening outward to go fullscreen, folding inward to come
+ * back. Drawn only where the browser would honour it — see `isSupported`.
+ */
+function drawFullscreenButton(ctx: Ctx): void {
+  if (!isSupported()) return;
+
+  const r = buttonRect();
+  const cx = r.x + r.w / 2, cy = r.y + r.h / 2;
+  const out = isFullscreen();
+
+  panel(ctx, r.x, r.y, r.w, r.h, 5);
+
+  ctx.save();
+  ctx.strokeStyle = PALETTE.label;
+  ctx.lineWidth = 1.6;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  for (const sx of [-1, 1]) {
+    for (const sy of [-1, 1]) {
+      // Expanding, the corners sit wide and the arms run in; contracting, they
+      // sit close and the arms run out.
+      bracket(ctx, cx, cy, sx, sy, out ? 3 : 7.5, out ? -4.5 : 4.5);
     }
   }
   ctx.restore();
@@ -444,6 +493,7 @@ export function drawPanels(ctx: Ctx, state: GameState): void {
   drawProfile(ctx, state);
   drawChatter(ctx, state);
   drawMinimap(ctx, state);
+  drawFullscreenButton(ctx);
   drawConsole(ctx, state);
   // Last, because a thumb near the bottom of the frame lands on the console.
   drawStick(ctx, state);

@@ -54,6 +54,19 @@
         cursor: crosshair;
       }
 
+      /*
+        Fullscreen would otherwise keep the clamped height above and sit as a
+        letterboxed strip in the middle of the screen. viewport.ts sees the new
+        size through its ResizeObserver and refits the backing store, so this
+        shows more of the system rather than scaling it up.
+      */
+      canvas:fullscreen {
+        width: 100vw;
+        height: 100vh;
+        border: 0;
+        background: var(--void);
+      }
+
       .speed {
         display: flex;
         align-items: center;
