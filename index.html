@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Galactic Gourmet — Sol</title>
+    <style>
+      /*
+        Almost all of the HUD lives on the canvas now — see src/panels.ts. What
+        is left out here is the chrome that has no business inside the frame:
+        the status line, the controls, and the time scale.
+      */
+      :root {
+        --void: #12130f;
+        --panel: #1b1d18;
+        --rule: #35382d;
+        --ink: #e8e4d6;
+        --ink-dim: #8c8a82;
+        --ember: #efa827;
+        --mono:
+          ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+        --sans: "Helvetica Neue", Inter, system-ui, sans-serif;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        padding: 24px 16px 48px;
+        background: var(--void);
+        color: var(--ink);
+        font-family: var(--sans);
+        display: flex;
+        justify-content: center;
+      }
+      .shell {
+        width: 100%;
+      }
+
+      /*
+        The canvas has no width/height attributes, so CSS is the only thing
+        that decides its size. It needs an explicit height or it falls back to
+        the 150px intrinsic default. src/viewport.ts matches the backing store
+        to whatever size this produces, so growing the box shows more of the
+        system rather than stretching it.
+      */
+      canvas {
+        width: 100%;
+        height: clamp(340px, 64vh, 820px);
+        display: block;
+        background: var(--panel);
+        border: 1px solid var(--rule);
+        touch-action: none;
+        cursor: crosshair;
+      }
+
+      /*
+        Fullscreen would otherwise keep the clamped height above and sit as a
+        letterboxed strip in the middle of the screen. viewport.ts sees the new
+        size through its ResizeObserver and refits the backing store, so this
+        shows more of the system rather than scaling it up.
+      */
+      canvas:fullscreen {
+        width: 100vw;
+        height: 100vh;
+        border: 0;
+        background: var(--void);
+      }
+
+      .speed {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-top: 12px;
+      }
+      .speed label {
+        font-family: var(--mono);
+        font-size: 9px;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        color: var(--ink-dim);
+      }
+      .speed input {
+        flex: 1;
+        accent-color: var(--ember);
+      }
+      #speed-label {
+        font-family: var(--mono);
+        font-size: 11px;
+        width: 44px;
+        text-align: right;
+      }
+
+      #status {
+        margin-top: 12px;
+        min-height: 20px;
+        font-family: var(--mono);
+        font-size: 12px;
+        color: var(--ink-dim);
+      }
+      .keys {
+        margin-top: 16px;
+        padding-top: 12px;
+        border-top: 1px solid var(--rule);
+        font-family: var(--mono);
+        font-size: 10px;
+        color: var(--ink-dim);
+        letter-spacing: 0.06em;
+        line-height: 1.9;
+      }
+      .keys b {
+        color: var(--ink);
+        font-weight: 500;
+      }
+    </style>
+    <script type="module" crossorigin src="./assets/index-LPaKygeg.js"></script>
+  </head>
+  <body>
+    <div class="shell">
+      <p id="status">Drag out from Earth toward where it should fly, and release.</p>
+      
+      <canvas id="stage"></canvas>
+
+      <div class="speed">
+        <label for="speed">Sim speed</label>
+        <input type="range" id="speed" />
+        <span id="speed-label">0.40×</span>
+      </div>
+
+      <div class="keys">
+        <b>Drag + release</b> launch, in the direction you want it to go
+        &nbsp;·&nbsp; <b>Drag in flight</b> turn and burn toward your finger
+        &nbsp;·&nbsp; <b>Touch a dry stage</b> drop it<br />
+        <b>Space</b> burn &nbsp;·&nbsp; <b>&#8592; &#8594; / A D</b> steer
+        &nbsp;·&nbsp; <b>S</b> drop stage &nbsp;·&nbsp; <b>R</b> restart
+        &nbsp;·&nbsp; <b>M</b> mute<br />
+        Hit a planet and the dish is caught in orbit — it keeps cooking there,
+        so drag again to relaunch it. Free, but the kaiju is still coming.
+      </div>
+    </div>
+  </body>
+</html>
