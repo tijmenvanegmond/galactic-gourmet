@@ -28,6 +28,8 @@ export const PANELS = {
   profileHeight: 66,
   margin: 10,
   chatterWidth: 300,
+  // Shared, because the fullscreen button parks itself underneath it.
+  minimapSize: 88,
 };
 
 export const SUN = {
@@ -56,8 +58,8 @@ export const PHYSICS = {
 
 export const LAUNCH = {
   minPull: 20,
-  maxPull: 180,
-  impulse: 0.040,   // pull length -> launch speed
+  maxPull: 300,
+  impulse: 0.030,   // pull length -> launch speed
   padOffset: 25,    // spawn distance above the home planet's surface
   /**
    * How much of a real circular orbit's velocity a launch is given for free.
@@ -78,7 +80,7 @@ export const LAUNCH = {
    * easier to reach and everything else harder to hold — and near the star the
    * dip is fatal rather than useful.
    */
-  inheritOrbital: 0.75,
+  inheritOrbital: 0.60,
 };
 
 // --- capture orbits ---------------------------------------------------------
