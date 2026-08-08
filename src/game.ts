@@ -1,5 +1,5 @@
 import {
-  SIM, LAUNCH, SPICES, SPICE_NAMES, SERVEABLE, SCORE, SOL, PALETTE, JUICE, STICK, END,
+  SIM, LAUNCH, SPICES, SERVEABLE, SCORE, SOL, PALETTE, JUICE, STICK, END,
 } from './config';
 import { watchViewport } from './viewport';
 import {
@@ -15,6 +15,7 @@ import {
   createKaiju, stepKaiju, enrage, appease, grabRadius, currentStop,
 } from './kaiju';
 import { bark, shortName } from './voice';
+import { rollOrder, rollDish, foodQuip } from './menu';
 import {
   createCamera, followPayload, followOrbit, followHome, settleZoom, toWorld, kick,
 } from './camera';
@@ -24,7 +25,7 @@ import { createJuice, shake, freeze, flash, ring, pop, stepJuice } from './juice
 import * as audio from './audio';
 import * as hud from './hud';
 import type {
-  GameState, Order, Particle, ParticleKind, Payload, PayloadHooks, Planet,
+  FoodEvent, GameState, Particle, ParticleKind, Payload, PayloadHooks, Planet,
   SpicedPlanet, Vec2,
 } from './types';
 
@@ -43,13 +44,6 @@ export function startGame(canvas: HTMLCanvasElement): void {
   const input = createInput();
 
   // ---- lifecycle ----------------------------------------------------------
-  function rollOrder(): Order {
-    return {
-      doneness: SERVEABLE[Math.floor(Math.random() * SERVEABLE.length)],
-      spice: SPICE_NAMES[Math.floor(Math.random() * SPICE_NAMES.length)],
-    };
-  }
-
   function createState(): GameState {
     const level = structuredClone(SOL);
     const home = homePlanet(level.planets);
@@ -69,6 +63,7 @@ export function startGame(canvas: HTMLCanvasElement): void {
       ending: null,
       over: 0,
       chatter: { line: '', life: 0 },
+      dish: rollDish(),
       pod: null,
       aim: null,
       dragOffset: null,
@@ -107,6 +102,22 @@ export function startGame(canvas: HTMLCanvasElement): void {
 
   function newOrder(): void {
     state.order = rollOrder();
+    state.dish = rollDish();
+  }
+
+  /**
+   * The dish says its piece, in its own language, where it is standing. It
+   * goes in world space rather than to the diner's chatter line because it is
+   * a different mouth — the profile card belongs to the kaiju.
+   */
+  function speak(pod: Payload, event: FoodEvent): void {
+    const line = foodQuip(pod.food, event);
+    // Being eaten is scored in the same instant, and the points float up from
+    // the same spot, so those last words are given room above them.
+    if (line) {
+      pop(state.juice, pod.x, pod.y - (event === 'eaten' ? 56 : 24), line,
+        PALETTE.ink, 12, 0.005);
+    }
   }
 
   // ---- effects ------------------------------------------------------------
@@ -146,6 +157,10 @@ export function startGame(canvas: HTMLCanvasElement): void {
         life: 0.7, decay: 0.03, size: 2.4,
         color: PALETTE.exhaust, kind: 'ember',
       });
+    },
+    charred(pod: Payload) {
+      speak(pod, 'burn');
+      emit(pod.x, pod.y, PALETTE.smoke, 8, 1.4, 'smoke', 3, 0.018);
     },
     pickup(pod: Payload, planet: SpicedPlanet) {
       const color = SPICES[planet.spice].color;
@@ -282,9 +297,10 @@ export function startGame(canvas: HTMLCanvasElement): void {
       hud.setStatus('Relaunched. Drag to point it at the kaiju and burn.');
     } else {
       if (state.phase !== 'aim' || state.payloads <= 0) return;
-      state.pod = createPayload(a.originX, a.originY, a.vx, a.vy, state.home);
+      state.pod = createPayload(a.originX, a.originY, a.vx, a.vy, state.home, state.dish);
       state.payloads -= 1;
       state.phase = 'flight';
+      speak(state.pod, 'launch');
       emit(a.originX, a.originY, PALETTE.exhaust, 24, 3.6, 'ember', 2.6);
       ring(state.juice, a.originX, a.originY, PALETTE.exhaust, 3.6, 2.4, 0.04);
       shake(state.juice, 0.25 + a.power * 0.25);
@@ -326,6 +342,8 @@ export function startGame(canvas: HTMLCanvasElement): void {
     const b = bandFor(pod.heat);
 
     if (fed) {
+      // Last words, whatever the verdict turns out to be.
+      speak(pod, 'eaten');
       const want = bandIndex(state.order.doneness);
       const got = bandIndex(b.label);
       let points = !SERVEABLE.includes(b.label) ? 0
@@ -344,7 +362,8 @@ export function startGame(canvas: HTMLCanvasElement): void {
         // An insult costs it patience as well as making it faster.
         const lost = enrage(state.kaiju, state.level.kaiju);
         hud.setStatus(
-          `Rejected — ${b.label}. ${shortName(state.kaiju.name)} speeds up, −${lost}s patience.`);
+          `Sent back — ${b.label} ${pod.food.name}. `
+          + `${shortName(state.kaiju.name)} speeds up, −${lost}s patience.`);
         say(bark('reject'), true);
         flash(state.juice, PALETTE.kaijuRage, 0.35);
         shake(state.juice, 0.7);
@@ -358,7 +377,8 @@ export function startGame(canvas: HTMLCanvasElement): void {
         const gained = appease(state.kaiju, state.level.kaiju);
         const rack = pod.rack.length ? ` with ${pod.rack.join(' + ')}` : ' plain';
         const bought = gained > 0 ? ` +${gained}s patience.` : '';
-        hud.setStatus(`Served ${b.label}${rack}. +${points}.${bought}`);
+        hud.setStatus(
+          `Served ${pod.food.name} ${b.label}${rack}. +${points}.${bought}`);
         say(bark(got === want ? 'perfect' : 'good'), true);
         flash(state.juice, '#FFFFFF', points >= SCORE.exactBand ? 0.4 : 0.22);
         shake(state.juice, 0.45 + Math.min(0.4, points / 400));
@@ -374,7 +394,9 @@ export function startGame(canvas: HTMLCanvasElement): void {
       ring(state.juice, pod.x, pod.y, b.fill, 5, 3.4, 0.028);
     } else {
       hud.setStatus(`Payload lost — ${reason}.`);
-      state.ghosts.push({ x: pod.x, y: pod.y, band: Math.max(0, bandIndex(b.label)), life: 1 });
+      state.ghosts.push({
+        x: pod.x, y: pod.y, emoji: pod.food.emoji, burnt: pod.charred, life: 1,
+      });
 
       if (reason === LOST_TO_STAR) {
         emit(pod.x, pod.y, PALETTE.sun, 30, 5.5, 'spark', 3);

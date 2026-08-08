@@ -1,0 +1,148 @@
+# ---------------------------------------------------------------------------
+# The larder.
+#
+# Every dish is a place, and every place here is already a food — no pun is
+# added, the atlas got there first. Some are countries and some are the towns a
+# recipe is named after, which is the same joke either way. Nothing in the game
+# calls them anything but dishes.
+#
+# Parsed at build time by @rollup/plugin-yaml, so adding a dish is a data edit
+# and never a code one. Each needs a name, an emoji it is drawn as, and a
+# language it speaks — the language is a key into the quips below, so a new
+# dish in a language that already exists costs one line and inherits a voice.
+#
+# Translations are best-effort exclamations rather than careful prose. They are
+# meant to be short enough to read while something is on fire. Correct them
+# here; nothing in the code knows what any of them mean.
+# ---------------------------------------------------------------------------
+
+# What the dish itself says. It talks three times: on the way up, while it is
+# being roasted past edible, and as it is swallowed.
+quips:
+  english:
+    launch: ['Right then. Off I go.', 'Cheerio!']
+    burn: ["I'm catching! I'm catching!", 'Bit warm, this.']
+    eaten: ['Worth it. Probably.', 'Tell my family.']
+  french:
+    launch: ['Au revoir!', 'Adieu, la Terre.']
+    burn: ['Ça brûle!', 'Trop chaud, trop chaud!']
+    eaten: ['Bon appétit. Hélas.', "C'est la fin."]
+  italian:
+    launch: ['Arrivederci!', 'Ciao, ciao!']
+    burn: ['Brucio!', 'Troppo caldo!']
+    eaten: ['Buon appetito.', 'Addio, mondo crudele!']
+  spanish:
+    launch: ['¡Adiós!', '¡Allá voy!']
+    burn: ['¡Me quemo!', '¡Demasiado, demasiado!']
+    eaten: ['¡Que aproveche!', 'Fue un honor.']
+  portuguese:
+    launch: ['Adeus!', 'Lá vou eu.']
+    burn: ['Estou a arder!', 'Quente demais!']
+    eaten: ['Bom apetite.', 'Até nunca.']
+  german:
+    launch: ['Auf Wiedersehen!', "Los geht's."]
+    burn: ['Es brennt! Es brennt!', 'Viel zu heiß!']
+    eaten: ['Guten Appetit. Leider.', 'Das war es dann.']
+  dutch:
+    launch: ['Daar ga ik!', 'Tot ziens!']
+    burn: ['Ik verbrand!', 'Veel te heet!']
+    eaten: ['Eet smakelijk. Helaas.', 'Dag allemaal.']
+  turkish:
+    launch: ['Hoşça kal!', 'Gidiyorum!']
+    burn: ['Yanıyorum!', 'Çok sıcak!']
+    eaten: ['Afiyet olsun!', 'Elveda.']
+  greek:
+    launch: ['Αντίο!', 'Πάμε!']
+    burn: ['Καίγομαι!', 'Πολύ ζέστη!']
+    eaten: ['Καλή όρεξη!', 'Τέλος.']
+  ukrainian:
+    launch: ['Прощавай!', 'Полетіли!']
+    burn: ['Я горю!', 'Надто гаряче!']
+    eaten: ['Смачного... тобі.', 'Ну от і все.']
+  japanese:
+    launch: ['行ってきます!', 'さようなら!']
+    burn: ['熱い! 熱い!', '焦げる!']
+    eaten: ['どうぞ召し上がれ。', 'これまでか。']
+  hindi:
+    launch: ['अलविदा!', 'चला मैं!']
+    burn: ['जल रहा हूँ!', 'बहुत गरम!']
+    eaten: ['खाइए, खाइए.', 'बस, इतना ही.']
+  welsh:
+    launch: ['Hwyl fawr!', "Dyma fi'n mynd."]
+    burn: ["Dwi'n llosgi!", 'Rhy boeth!']
+    eaten: ['Mwynhewch.', 'Dyna ni, felly.']
+  icelandic:
+    launch: ['Bless!', 'Ég er farinn.']
+    burn: ['Ég brenn!', 'Allt of heitt!']
+    eaten: ['Verði þér að góðu.', 'Þá er það búið.']
+  maltese:
+    launch: ['Saħħa!', 'Sejjer!']
+    burn: ['Qed naħraq!', 'Sħun wisq!']
+    eaten: ['Bl-appetit!', 'Kollox spiċċa.']
+  indonesian:
+    launch: ['Selamat tinggal!', 'Berangkat!']
+    burn: ['Panas! Panas!', 'Aku gosong!']
+    eaten: ['Selamat makan.', 'Sudah, ya.']
+  chinese:
+    launch: ['再见!', '我走了!']
+    burn: ['太烫了!', '烧焦了!']
+    eaten: ['请慢用。', '就这样吧。']
+
+foods:
+  - { name: Turkey, emoji: 🦃, language: turkish }
+  - { name: Chile, emoji: 🌶️, language: spanish }
+  - { name: Greece, emoji: 🫒, language: greek }
+  - { name: Hungary, emoji: 🥘, language: english }
+  - { name: Wales, emoji: 🧀, language: welsh }
+  - { name: Brazil, emoji: 🌰, language: portuguese }
+  - { name: Java, emoji: ☕, language: indonesian }
+  - { name: China, emoji: 🍽️, language: chinese }
+  - { name: Cuba, emoji: 🥪, language: spanish }
+  - { name: Malta, emoji: 🍯, language: maltese }
+  - { name: Bermuda, emoji: 🧅, language: english }
+  - { name: Iceland, emoji: 🧊, language: icelandic }
+  - { name: Denmark, emoji: 🥐, language: dutch }
+  - { name: Jersey, emoji: 🥛, language: english }
+  - { name: Sandwich, emoji: 🥪, language: english }
+  - { name: Hamburg, emoji: 🍔, language: german }
+  - { name: Frankfurt, emoji: 🌭, language: german }
+  - { name: Bologna, emoji: 🍖, language: italian }
+  - { name: Brussels, emoji: 🥬, language: dutch }
+  - { name: Vienna, emoji: 🌭, language: german }
+  - { name: Parma, emoji: 🥓, language: italian }
+  - { name: Genoa, emoji: 🌿, language: italian }
+  - { name: Florence, emoji: 🥩, language: italian }
+  - { name: Dijon, emoji: 🥣, language: french }
+  - { name: Toulouse, emoji: 🥖, language: french }
+  - { name: Bordeaux, emoji: 🍷, language: french }
+  - { name: Madeira, emoji: 🍰, language: portuguese }
+  - { name: Marsala, emoji: 🍾, language: italian }
+  - { name: Rioja, emoji: 🍇, language: spanish }
+  - { name: Kalamata, emoji: 🫒, language: greek }
+  - { name: Havana, emoji: 🍹, language: spanish }
+  - { name: Tequila, emoji: 🥃, language: spanish }
+  - { name: Tabasco, emoji: 🌶️, language: spanish }
+  - { name: Cheddar, emoji: 🧀, language: english }
+  - { name: Stilton, emoji: 🧀, language: english }
+  - { name: Wensleydale, emoji: 🧀, language: english }
+  - { name: Brie, emoji: 🧀, language: french }
+  - { name: Camembert, emoji: 🧀, language: french }
+  - { name: Gouda, emoji: 🧀, language: dutch }
+  - { name: Edam, emoji: 🧀, language: dutch }
+  - { name: Roquefort, emoji: 🧀, language: french }
+  - { name: Madras, emoji: 🍛, language: hindi }
+  - { name: Worcester, emoji: 🍶, language: english }
+  - { name: Kiev, emoji: 🍗, language: ukrainian }
+  - { name: Buffalo, emoji: 🍗, language: english }
+  - { name: Lima, emoji: 🫘, language: spanish }
+  - { name: Cayenne, emoji: 🌶️, language: french }
+  - { name: Nice, emoji: 🥗, language: french }
+  - { name: Bath, emoji: 🫓, language: english }
+  - { name: Devon, emoji: 🍦, language: english }
+  - { name: Dundee, emoji: 🍰, language: english }
+  - { name: Bakewell, emoji: 🥧, language: english }
+  - { name: Chelsea, emoji: 🍥, language: english }
+  - { name: Eccles, emoji: 🥮, language: english }
+  - { name: Cornwall, emoji: 🥟, language: english }
+  - { name: 'Melton Mowbray', emoji: 🥧, language: english }
+  - { name: Yokohama, emoji: 🍜, language: japanese }

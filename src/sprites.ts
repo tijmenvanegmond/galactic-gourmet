@@ -479,8 +479,34 @@ function makePip(spice: SpiceName): Sprite {
   });
 }
 
+// --- food -------------------------------------------------------------------
+// A dish is drawn as the thing it is, so the sprite is its own emoji. Baked
+// like everything else — one glyph render per dish, blitted thereafter.
+
+const EMOJI_SIZE = 19;
+
+function makeEmoji(ch: string, scorched: boolean): Sprite {
+  const box = EMOJI_SIZE + 6;
+  return bake(box, box, c => {
+    c.font = `${EMOJI_SIZE}px "Apple Color Emoji", "Segoe UI Emoji", `
+      + `"Noto Color Emoji", sans-serif`;
+    c.textAlign = 'center';
+    c.textBaseline = 'middle';
+    c.fillText(ch, 0, 1);
+    if (scorched) {
+      // Painted over the glyph only, so it blackens in its own shape rather
+      // than sitting behind a square. Cross-faded over the clean one at draw
+      // time, which is what makes the roast visible on the dish itself.
+      c.globalCompositeOperation = 'source-atop';
+      c.fillStyle = '#1E1A16';
+      c.fillRect(-box, -box, box * 2, box * 2);
+    }
+  });
+}
+
 // --- cache ------------------------------------------------------------------
 
+const emojis = new Map<string, Sprite>();
 const planets = new Map<string, Sprite>();
 const dishes = new Map<number, Sprite>();
 const pips = new Map<SpiceName, Sprite>();
@@ -513,6 +539,14 @@ export function dishSprite(bandIndex: number): Sprite {
   const i = Math.max(0, Math.min(BANDS.length - 1, bandIndex));
   let s = dishes.get(i);
   if (!s) { s = makeDish(i); dishes.set(i, s); }
+  return s;
+}
+
+/** The dish itself. `scorched` is the burnt copy, faded in over the clean one. */
+export function foodSprite(emoji: string, scorched = false): Sprite {
+  const key = scorched ? `${emoji}!` : emoji;
+  let s = emojis.get(key);
+  if (!s) { s = makeEmoji(emoji, scorched); emojis.set(key, s); }
   return s;
 }
 

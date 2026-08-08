@@ -137,6 +137,19 @@ export interface Level {
   kaiju: KaijuConfig;
 }
 
+/** One line of the larder, loaded from `food.yaml`. */
+export interface Food {
+  name: string;
+  /** What it is drawn as — the payload is a picture of itself. */
+  emoji: string;
+  /** Key into the quip bank: which language it screams in. */
+  language: string;
+}
+
+/** The three moments a dish has something to say about its situation. */
+export type FoodEvent = 'launch' | 'burn' | 'eaten';
+
+/** What the diner wants. Which dish it happens to be is not its business. */
 export interface Order {
   doneness: BandLabel;
   spice: SpiceName;
@@ -159,7 +172,11 @@ export interface Payload {
   vx: number;
   vy: number;
   angle: number;
+  /** What this one is. Carried by the dish, not asked for by the order. */
+  food: Food;
   heat: number;
+  /** Latch, so it only complains about being burnt the once. */
+  charred: boolean;
   stage: number;
   fuel: number;
   rack: SpiceName[];
@@ -281,8 +298,11 @@ export interface Particle extends Vec2 {
   kind: ParticleKind;
 }
 
+/** What is left floating where a dish was lost. */
 export interface Ghost extends Vec2 {
-  band: number;
+  emoji: string;
+  /** Charred if it was cooked past edible before it went. */
+  burnt: boolean;
   life: number;
 }
 
@@ -350,6 +370,8 @@ export interface Stick {
 export interface PayloadHooks {
   exhaust(pod: Payload): void;
   pickup(pod: Payload, planet: SpicedPlanet): void;
+  /** Fired once, the moment it is cooked past anything edible. */
+  charred(pod: Payload): void;
 }
 
 export interface InputHandlers {
@@ -385,6 +407,8 @@ export interface GameState {
   /** Frames since the run ended, for the card's fade and its input gate. */
   over: number;
   chatter: Chatter;
+  /** What is loaded on the pad, before it becomes a payload's own. */
+  dish: Food;
   pod: Payload | null;
   aim: Aim | null;
   dragOffset: Vec2 | null;

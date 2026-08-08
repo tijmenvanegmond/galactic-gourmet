@@ -6,7 +6,7 @@ import { drawPanels } from './panels';
 import { drawEndCard } from './endcard';
 import {
   drawSprite, planetSprite, starSprite, kaijuHeadSprite, kaijuSegmentSprite,
-  dishSprite, pipSprite, SEGMENT_UNIT,
+  foodSprite, pipSprite, SEGMENT_UNIT,
 } from './sprites';
 import type {
   Aim, Camera, GameState, Juice, Kaiju, KaijuConfig, Particle, Payload, Planet,
@@ -423,11 +423,20 @@ function drawPayload(ctx: Ctx, cam: Camera, pod: Payload, t: number): void {
   const speed = Math.hypot(pod.vx, pod.vy);
   const stretch = Math.min(0.28, speed * 0.022);
   const sq = pod.squash;
-  drawSprite(
-    ctx, dishSprite(bi), s.x, s.y, 1, pod.angle, 1,
-    1 + stretch - sq * 0.42,
-    1 - stretch * 0.7 + sq * 0.42,
-  );
+  const sx = 1 + stretch - sq * 0.42;
+  const sy = 1 - stretch * 0.7 + sq * 0.42;
+
+  // Emoji glyphs have their own idea of up, so the dish does not rotate with
+  // its heading — the heading line above already says which way it faces.
+  const clean = foodSprite(pod.food.emoji);
+  drawSprite(ctx, clean, s.x, s.y, 1, 0, 1, sx, sy);
+  // Char fades in over the top, so the roast reads on the dish and not only
+  // in the gauge. Only past the point where it stops looking appetising.
+  const char = Math.max(0, (pod.heat - 60) / 55);
+  if (char > 0) {
+    drawSprite(ctx, foodSprite(pod.food.emoji, true), s.x, s.y,
+      1, 0, Math.min(1, char), sx, sy);
+  }
 
   pod.rack.forEach((sp, i) => {
     drawSprite(ctx, pipSprite(sp), s.x - 7 + i * 7, s.y - 18, 0.9, Math.sin(t * 0.08 + i) * 0.3);
@@ -536,7 +545,8 @@ export function render(ctx: Ctx, state: GameState): void {
 
   for (const g of ghosts) {
     const s = toScreen(cam, g.x, g.y);
-    drawSprite(ctx, dishSprite(g.band), s.x, s.y, 0.7, 0, Math.min(1, g.life) * 0.7);
+    drawSprite(ctx, foodSprite(g.emoji, g.burnt), s.x, s.y, 0.8, 0,
+      Math.min(1, g.life) * 0.7);
   }
 
   drawKaiju(ctx, cam, kaiju, t, level.kaiju, pod !== null);

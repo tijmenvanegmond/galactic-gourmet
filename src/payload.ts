@@ -1,10 +1,10 @@
 import { SIM, SUN, PHYSICS, STAGES, ORBIT, JUICE } from './config';
 import {
   gravityAt, heatRate, heatMultiplier, spiceRingsAt,
-  planetPos, planetVel, hasCleared,
+  planetPos, planetVel, hasCleared, bandFor,
 } from './world';
 import type {
-  Input, Level, Payload, PayloadHooks, Planet, Stage, StepOutcome,
+  Food, Input, Level, Payload, PayloadHooks, Planet, Stage, StepOutcome,
 } from './types';
 
 const FLYING: StepOutcome = { kind: 'flying' };
@@ -20,11 +20,14 @@ export function createPayload(
   vx: number,
   vy: number,
   ignore: Planet | null,
+  food: Food,
 ): Payload {
   return {
     x, y, vx, vy,
     angle: Math.atan2(vy, vx),
+    food,
     heat: 0,
+    charred: false,
     stage: 0,
     fuel: STAGES[0].fuel,
     rack: [],
@@ -131,6 +134,13 @@ function cook(
 
   pod.heat += heatRate(sunDist) * heatMultiplier(pod.rack) * dt;
   pod.squash *= 0.88;
+
+  // Past the last edible band it is ruined, and it has something to say about
+  // that. Latched, because it is only ruined once.
+  if (!pod.charred && bandFor(pod.heat).label === 'charcoal') {
+    pod.charred = true;
+    hooks.charred(pod);
+  }
 
   pod.trail.push({ x: pod.x, y: pod.y });
   if (pod.trail.length > JUICE.trailLength) pod.trail.shift();

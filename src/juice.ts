@@ -45,8 +45,11 @@ export function pop(
   text: string,
   color: string,
   size = 13,
+  // A number is read at a glance; a sentence is not, so anything wordier
+  // asks for a slower one.
+  decay = 0.011,
 ): void {
-  j.pops.push({ x, y, text, color, size, life: 1, decay: 0.011, vy: -0.55 });
+  j.pops.push({ x, y, text, color, size, life: 1, decay, vy: -0.55 });
 }
 
 export function stepJuice(j: Juice): void {

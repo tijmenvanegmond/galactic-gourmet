@@ -1,4 +1,5 @@
 import { defineConfig } from 'vite';
+import yaml from '@rollup/plugin-yaml';
 
 export default defineConfig({
   // Relative asset URLs, so a build can be served from any subpath. This is
@@ -7,6 +8,9 @@ export default defineConfig({
   base: './',
   build: { target: 'es2022' },
   plugins: [
+    // The menu is data, not code — see src/food.yaml. Parsed at build time, so
+    // there is no loader and no parser in the bundle.
+    yaml(),
     {
       // GitHub Pages runs Jekyll over the published branch unless told not to,
       // which would silently drop any path beginning with an underscore.

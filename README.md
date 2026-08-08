@@ -1,7 +1,9 @@
 # Galactic Gourmet
 
-Launch food from Earth, cook it in the gravity well of a star, and feed the
+Launch dishes off Earth, cook them in the gravity well of a star, and feed the
 kaiju before it eats the planet.
+
+The dishes are countries. Everything else about the kitchen is normal.
 
 Hitting a planet does not wreck the dish — it gets caught in orbit, keeps
 cooking there, and can be flung onward for free. Missing is a detour, not a
@@ -87,6 +89,9 @@ src/world.ts        orbital kinematics, gravity field, heat field, spice rings
 src/trajectory.ts   forward prediction (shares the integrator with flight)
 src/payload.ts      payload state: thrust, staging, roasting, pickup
 src/kaiju.ts        the tour, the hunt, patience
+src/food.yaml       the larder: every dish, its emoji, and the language it
+                    screams in. Parsed at build time, not at runtime.
+src/menu.ts         reads food.yaml — rolls a dish, a ticket, and the quips
 src/camera.ts       follow, zoom, world<->screen transforms
 src/sprites.ts      offscreen sprite baking — all art is drawn by code
 src/juice.ts        shake, hit-stop, flashes, shockwaves, floating text
@@ -182,6 +187,49 @@ is just a planet with a `parent`, so `planetPos` and `planetVel` recurse one
 level: it rides its parent's rail and turns on its own, and a relaunch from one
 inherits both motions. Everything else — gravity, capture, sprites, the minimap
 — needed no special case.
+
+## The menu
+
+The dishes live in `food.yaml` and nowhere else. `@rollup/plugin-yaml` parses
+it at build time, so it costs no loader and no parser in the bundle, and adding
+a dish is a data edit rather than a code one. `menu.ts` is the only module that
+knows the file's shape.
+
+Every dish is a place, and every place on the list is already a food — no pun
+is added, the atlas got there first. Turkey, Chile, Bologna, Cheddar, Bakewell.
+Some are countries and some are the towns a recipe is named after, which is the
+same joke either way. The list is written out rather than assembled from parts,
+because unlike the kaiju's name — any monster noun works with any epithet — a
+pun does not survive being generated.
+
+Nothing in the game ever calls them anything but dishes. That is the whole
+gag: the kitchen is completely normal, and nobody remarks on where lunch came
+from.
+
+**A dish belongs to the payload, not to the order.** The diner asks for a
+doneness and a spice; which dish turns up is the kitchen's business. So `Food`
+is a field on `Payload`, and the order stays two lines long.
+
+Each dish carries three things:
+
+- **a name**, which is the joke;
+- **an emoji**, which is how it is drawn. `sprites.ts` bakes the glyph the same
+  way it bakes everything else, plus a charred copy — the same silhouette
+  painted black through `source-atop` — and the two cross-fade as the roast
+  climbs, so doneness reads on the dish itself and not only in the gauge. A
+  lost dish leaves its own emoji floating as a ghost, burnt if it was burnt;
+- **a language**, which is what it screams in.
+
+Because the dish speaks. It says something on the way up, again if you cook it
+past edible, and once more as it is swallowed — in its own language, in world
+space above itself, because the profile card belongs to the kaiju and this is a
+different mouth. Quips are keyed by language rather than by dish, so twelve
+cheeses share one bank of French and a new dish inherits a voice for free. A
+language with no lines written stays silent rather than falling back to
+English.
+
+The doneness and the spice remain the entire specification, so none of this
+changes any scoring.
 
 ## The diner
 

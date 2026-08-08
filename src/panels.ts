@@ -4,7 +4,7 @@
 // directly — nothing here writes to the DOM.
 // ---------------------------------------------------------------------------
 
-import { VIEW, PANELS, PALETTE, PHYSICS, SPICES, STAGES, STICK } from './config';
+import { VIEW, PANELS, PALETTE, PHYSICS, STAGES, STICK } from './config';
 import { planetPos, bandFor, bandByLabel } from './world';
 import { toScreen } from './camera';
 import { kaijuClock } from './kaiju';
@@ -222,16 +222,33 @@ function drawConsole(ctx: Ctx, state: GameState): void {
   ctx.stroke();
 
   // --- the order ---
+  // The place being served up is the headline; how it wants doing is the spec
+  // underneath, on one line so the rack has the right-hand end to itself.
   const order = state.order;
   const ordered = bandByLabel(order.doneness);
-  label(ctx, 'ORDER UP', 12, y + 15, { size: 8, spacing: 1.4, alpha: 0.7 });
-  label(ctx, order.doneness.toUpperCase(), 12, y + 33,
-    { size: compact ? 11 : 13, weight: 700, color: ordered.fill });
+  const size = compact ? 12 : 15;
+  label(ctx, 'ORDER UP', 12, y + 14, { size: 7, spacing: 1.4, alpha: 0.7 });
+
+  // Whatever is loaded — the dish in flight, or the next one on the pad. The
+  // emoji heads the ticket and the name is measured against what is left after
+  // it rather than against the whole column.
+  const food = pod ? pod.food : state.dish;
+  ctx.font = `${size}px ${MONO}`;
+  ctx.textAlign = 'left';
+  ctx.fillText(food.emoji, 12, y + 32);
+  const nameX = 12 + size + 6;
+  ctx.font = `700 ${size}px ${MONO}`;
+  label(ctx, truncate(ctx, food.name.toUpperCase(), leftRight - nameX - 12),
+    nameX, y + 32, { size, weight: 700, color: PALETTE.ink });
+
+  const spec = compact ? order.doneness : `${order.doneness} · ${order.spice}`;
+  ctx.font = `400 9px ${MONO}`;
+  label(ctx, truncate(ctx, spec, leftRight - 40), 26, y + 49,
+    { size: 9, color: ordered.fill });
   drawSprite(ctx, pipSprite(order.spice), 17, y + 46, 0.9);
-  label(ctx, order.spice, 26, y + 49, { size: 10, color: SPICES[order.spice].color });
 
   // What the pod is actually carrying, right-aligned in this column so a long
-  // doneness ("lightly toasted") can never run into it.
+  // place name ("Melton Mowbray") can never run into it.
   const rack: SpiceName[] = pod ? pod.rack : [];
   if (rack.length) {
     label(ctx, 'ON BOARD', leftRight, y + 36, { size: 7, align: 'right', alpha: 0.6 });
