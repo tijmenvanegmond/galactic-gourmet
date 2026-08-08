@@ -147,6 +147,13 @@ export const JUICE = {
   starCount: 260,
   starParallax: 0.30,
   trailLength: 150,
+  // Speed stretch on the dish, measured from a floor rather than from zero.
+  // A launch now leaves with a real orbital velocity — about 10 units/s at
+  // Earth — so a stretch that started at nothing sat pinned at its cap for
+  // every flight, and only a parked dish ever looked like itself.
+  stretchFrom: 13,
+  stretchRate: 0.013,
+  stretchMax: 0.20,
 };
 
 export const AUDIO = {

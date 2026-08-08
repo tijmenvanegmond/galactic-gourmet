@@ -217,7 +217,10 @@ Each dish carries three things:
   way it bakes everything else, plus a charred copy — the same silhouette
   painted black through `source-atop` — and the two cross-fade as the roast
   climbs, so doneness reads on the dish itself and not only in the gauge. A
-  lost dish leaves its own emoji floating as a ghost, burnt if it was burnt;
+  lost dish leaves its own emoji floating as a ghost, burnt if it was burnt.
+  It rides a white china plate drawn as a rocket, nose and fins, which is the
+  only part that turns to face the heading: the plate is the vehicle, and a pie
+  does not bank into a turn;
 - **a language**, which is what it screams in.
 
 Because the dish speaks. It says something on the way up, again if you cook it

@@ -480,8 +480,66 @@ function makePip(spice: SpiceName): Sprite {
 }
 
 // --- food -------------------------------------------------------------------
-// A dish is drawn as the thing it is, so the sprite is its own emoji. Baked
-// like everything else — one glyph render per dish, blitted thereafter.
+// A dish is drawn as the thing it is, so the sprite is its own emoji, riding a
+// plate. Baked like everything else — one glyph render per dish, blitted
+// thereafter.
+
+/**
+ * The plate the food rides on: white china drawn as a rocket, nose at +x so
+ * it can be rotated to the heading at draw time. The food itself stays
+ * upright on top of it, because a pie does not bank into a turn.
+ */
+function makePlate(): Sprite {
+  // The silhouette is symmetric front to back: the nose reaches 19 forward and
+  // the fins 19 back, so the origin is the middle of the shape and not merely
+  // the middle of the canvas. That is what stops the plate swinging around the
+  // food as it turns — it pivots under it instead.
+  return bake(64, 64, c => {
+    // fins first, so the body sits over their roots
+    c.fillStyle = shade('#EFEADA', 0.82);
+    c.strokeStyle = '#8C8A82';
+    c.lineWidth = 0.8;
+    for (const sign of [-1, 1]) {
+      c.beginPath();
+      c.moveTo(-8, 7 * sign);
+      c.lineTo(-19, 13.5 * sign);
+      c.lineTo(-12, 2.5 * sign);
+      c.closePath();
+      c.fill();
+      c.stroke();
+    }
+
+    // The body: round and stubby, a saucer with just enough of a nose to say
+    // which way it is pointing. The lip below is what keeps it china.
+    c.fillStyle = '#EFEADA';
+    c.strokeStyle = '#8C8A82';
+    c.lineWidth = 0.9;
+    c.beginPath();
+    c.moveTo(19, 0);
+    c.quadraticCurveTo(15, -11, 0, -12.5);
+    c.quadraticCurveTo(-13, -12.5, -14, 0);
+    c.quadraticCurveTo(-13, 12.5, 0, 12.5);
+    c.quadraticCurveTo(15, 11, 19, 0);
+    c.closePath();
+    c.fill();
+    c.stroke();
+
+    // the lip, which is the whole difference between a plate and a hull
+    c.strokeStyle = 'rgba(35,36,30,0.18)';
+    c.lineWidth = 0.7;
+    c.beginPath();
+    c.ellipse(0, 0, 11.5, 8.5, 0, 0, Math.PI * 2);
+    c.stroke();
+
+    // a glint along the top rim
+    c.strokeStyle = 'rgba(255,255,255,0.75)';
+    c.lineWidth = 1.2;
+    c.beginPath();
+    c.moveTo(-9, -9.6);
+    c.quadraticCurveTo(1, -12.4, 11, -8.4);
+    c.stroke();
+  });
+}
 
 const EMOJI_SIZE = 19;
 
@@ -510,6 +568,7 @@ const emojis = new Map<string, Sprite>();
 const planets = new Map<string, Sprite>();
 const dishes = new Map<number, Sprite>();
 const pips = new Map<SpiceName, Sprite>();
+let plate: Sprite | null = null;
 let star: Sprite | null = null;
 let kaijuHead: Sprite | null = null;
 let kaijuSegment: Sprite | null = null;
@@ -540,6 +599,11 @@ export function dishSprite(bandIndex: number): Sprite {
   let s = dishes.get(i);
   if (!s) { s = makeDish(i); dishes.set(i, s); }
   return s;
+}
+
+export function plateSprite(): Sprite {
+  if (!plate) plate = makePlate();
+  return plate;
 }
 
 /** The dish itself. `scorched` is the burnt copy, faded in over the clean one. */

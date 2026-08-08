@@ -6,7 +6,7 @@ import { drawPanels } from './panels';
 import { drawEndCard } from './endcard';
 import {
   drawSprite, planetSprite, starSprite, kaijuHeadSprite, kaijuSegmentSprite,
-  foodSprite, pipSprite, SEGMENT_UNIT,
+  foodSprite, plateSprite, pipSprite, SEGMENT_UNIT,
 } from './sprites';
 import type {
   Aim, Camera, GameState, Juice, Kaiju, KaijuConfig, Particle, Payload, Planet,
@@ -419,15 +419,14 @@ function drawPayload(ctx: Ctx, cam: Camera, pod: Payload, t: number): void {
     ctx.globalAlpha = 1;
   }
 
-  // squash on impact, stretch with speed
-  const speed = Math.hypot(pod.vx, pod.vy);
-  const stretch = Math.min(0.28, speed * 0.022);
   const sq = pod.squash;
-  const sx = 1 + stretch - sq * 0.42;
-  const sy = 1 - stretch * 0.7 + sq * 0.42;
+  const sx = 1 - sq * 0.42;
+  const sy = 1 + sq * 0.42;
 
-  // Emoji glyphs have their own idea of up, so the dish does not rotate with
-  // its heading — the heading line above already says which way it faces.
+  // The plate is the vehicle, so it turns to the heading. The food riding it
+  // does not: emoji have their own idea of up, and a pie does not bank.
+  drawSprite(ctx, plateSprite(), s.x, s.y, 1, pod.angle, 1, sx, sy);
+
   const clean = foodSprite(pod.food.emoji);
   drawSprite(ctx, clean, s.x, s.y, 1, 0, 1, sx, sy);
   // Char fades in over the top, so the roast reads on the dish and not only
